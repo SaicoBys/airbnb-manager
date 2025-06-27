@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m flask db migrate:*)",
+      "Bash(export FLASK_APP=run.py)",
+      "Bash(python3 -m flask db migrate:*)",
+      "Bash(python3.9 -m flask db migrate:*)",
+      "Bash(FLASK_APP=run.py /Users/saicobys/Library/Python/3.9/bin/flask db migrate -m \"Add Supply model for inventory management\")",
+      "Bash(FLASK_APP=run.py /Users/saicobys/Library/Python/3.9/bin/flask db upgrade)",
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "Bash(FLASK_APP=run.py /Users/saicobys/Library/Python/3.9/bin/flask db migrate -m \"Make phone number required and unique for clients\")",
+      "Bash(flask db migrate:*)",
+      "Bash(flask db:*)",
+      "Bash(source:*)",
+      "Bash(python:*)",
+      "Bash(pkill:*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": []
+  }
+}

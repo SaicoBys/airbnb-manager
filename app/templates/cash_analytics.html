@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>📈 Análisis de Cierres de Caja</h1>
+        <a href="{{ url_for('main.cash_closures') }}" class="btn btn-secondary">Volver a Cierres</a>
+    </div>
+
+    <!-- Estadísticas generales -->
+    <div class="analytics-summary">
+        <div class="summary-card">
+            <h3>Total de Cierres</h3>
+            <div class="amount">{{ total_closures }}</div>
+            <small>Cierres registrados</small>
+        </div>
+        
+        <div class="summary-card">
+            <h3>Entregas Pendientes</h3>
+            <div class="amount {% if pending_deliveries > 0 %}danger{% else %}success{% endif %}">
+                {{ pending_deliveries }}
+            </div>
+            <small>Cierres sin entregar</small>
+        </div>
+        
+        <div class="summary-card">
+            <h3>Entregas Exactas</h3>
+            <div class="amount success">{{ exact_deliveries }}</div>
+            <small>Sin diferencias</small>
+        </div>
+        
+        <div class="summary-card">
+            <h3>Tasa de Exactitud</h3>
+            <div class="amount {% if total_closures > 0 and (exact_deliveries / total_closures * 100) >= 80 %}success{% else %}warning{% endif %}">
+                {% if total_closures > 0 %}
+                    {{ "%.1f"|format(exact_deliveries / total_closures * 100) }}%
+                {% else %}
+                    0%
+                {% endif %}
+            </div>
+            <small>Entregas exactas</small>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="charts-container">
+        <!-- Gráfico de montos netos -->
+        <div class="chart-section">
+            <h2>💰 Evolución de Montos Netos</h2>
+            <div class="chart-container">
+                <canvas id="netAmountsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfico de estado de entregas -->
+        <div class="chart-section">
+            <h2>📊 Estado de Entregas</h2>
+            <div class="chart-container">
+                <canvas id="deliveryStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análisis de rendimiento -->
+    <div class="performance-analysis">
+        <h2>📋 Análisis de Rendimiento</h2>
+        <div class="analysis-grid">
+            <div class="analysis-card">
+                <h4>🎯 Precisión de Entregas</h4>
+                <div class="analysis-content">
+                    {% if total_closures > 0 %}
+                        {% set accuracy = (exact_deliveries / total_closures * 100) %}
+                        <div class="metric-large">{{ "%.1f"|format(accuracy) }}%</div>
+                        <p>
+                            {% if accuracy >= 90 %}
+                                Excelente precisión en las entregas
+                            {% elif accuracy >= 75 %}
+                                Buena precisión, con margen de mejora
+                            {% else %}
+                                Revisar procesos de conteo y registro
+                            {% endif %}
+                        </p>
+                    {% else %}
+                        <div class="metric-large">Sin datos</div>
+                        <p>No hay suficientes cierres para análisis</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="analysis-card">
+                <h4>⏰ Puntualidad de Entregas</h4>
+                <div class="analysis-content">
+                    {% if pending_deliveries == 0 %}
+                        <div class="metric-large success">100%</div>
+                        <p>Todas las entregas al día</p>
+                    {% else %}
+                        {% set punctuality = ((total_closures - pending_deliveries) / total_closures * 100) if total_closures > 0 else 0 %}
+                        <div class="metric-large {% if punctuality >= 80 %}success{% else %}warning{% endif %}">
+                            {{ "%.1f"|format(punctuality) }}%
+                        </div>
+                        <p>{{ pending_deliveries }} entrega(s) pendiente(s)</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="analysis-card">
+                <h4>📈 Tendencia de Ingresos</h4>
+                <div class="analysis-content">
+                    {% if net_amounts|length >= 2 %}
+                        {% set recent_avg = (net_amounts[-3:] | sum / net_amounts[-3:]|length) if net_amounts|length >= 3 else (net_amounts[-1]) %}
+                        {% set older_avg = (net_amounts[:-3] | sum / net_amounts[:-3]|length) if net_amounts|length >= 6 else (net_amounts[0] if net_amounts|length >= 1 else 0) %}
+                        {% set trend = ((recent_avg - older_avg) / older_avg * 100) if older_avg != 0 else 0 %}
+                        
+                        <div class="metric-large {% if trend > 0 %}success{% elif trend < -10 %}danger{% else %}warning{% endif %}">
+                            {% if trend > 0 %}+{% endif %}{{ "%.1f"|format(trend) }}%
+                        </div>
+                        <p>
+                            {% if trend > 10 %}
+                                Tendencia creciente positiva
+                            {% elif trend > 0 %}
+                                Ligero crecimiento
+                            {% elif trend > -10 %}
+                                Ingresos estables
+                            {% else %}
+                                Tendencia decreciente
+                            {% endif %}
+                        </p>
+                    {% else %}
+                        <div class="metric-large">Sin datos</div>
+                        <p>Insuficientes datos para tendencia</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .analytics-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .summary-card h3 {
+            margin: 0 0 15px 0;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .summary-card .amount {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        
+        .summary-card .amount.success {
+            color: #28a745;
+        }
+        
+        .summary-card .amount.danger {
+            color: #dc3545;
+        }
+        
+        .summary-card .amount.warning {
+            color: #ffc107;
+        }
+        
+        .summary-card small {
+            color: #6c757d;
+            font-size: 0.8em;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .chart-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .chart-section h2 {
+            margin: 0 0 20px 0;
+            color: #495057;
+            font-size: 1.2em;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .performance-analysis {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .performance-analysis h2 {
+            margin: 0 0 25px 0;
+            color: #495057;
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .analysis-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .analysis-card h4 {
+            margin: 0 0 15px 0;
+            color: #495057;
+        }
+        
+        .analysis-content {
+            text-align: center;
+        }
+        
+        .metric-large {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        
+        .metric-large.success {
+            color: #28a745;
+        }
+        
+        .metric-large.warning {
+            color: #ffc107;
+        }
+        
+        .metric-large.danger {
+            color: #dc3545;
+        }
+        
+        .analysis-content p {
+            margin: 0;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Datos para los gráficos
+            const periods = {{ periods | tojson }};
+            const netAmounts = {{ net_amounts | tojson }};
+            const deliveryStatuses = {{ delivery_statuses | tojson }};
+
+            // Gráfico de montos netos
+            const netAmountsCtx = document.getElementById('netAmountsChart').getContext('2d');
+            new Chart(netAmountsCtx, {
+                type: 'line',
+                data: {
+                    labels: periods,
+                    datasets: [{
+                        label: 'Monto Neto (DOP)',
+                        data: netAmounts,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'DOP ' + value.toLocaleString('es-DO');
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 6,
+                            hoverRadius: 8
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de estado de entregas
+            const statusCounts = {};
+            deliveryStatuses.forEach(status => {
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+
+            const deliveryStatusCtx = document.getElementById('deliveryStatusChart').getContext('2d');
+            new Chart(deliveryStatusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: [
+                            '#28a745', // Exacto
+                            '#ffc107', // Exceso
+                            '#dc3545', // Faltante
+                            '#6c757d'  // Pendiente
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}

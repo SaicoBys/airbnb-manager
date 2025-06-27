@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Actualizar Stock: {{ supply.name }}</h1>
+    <hr>
+    
+    <!-- Información actual del suministro -->
+    <div class="supply-info">
+        <div class="info-card">
+            <h3>Información Actual</h3>
+            <p><strong>Categoría:</strong> {{ supply.category }}</p>
+            <p><strong>Stock Actual:</strong> {{ supply.current_stock }} unidades</p>
+            <p><strong>Stock Mínimo:</strong> {{ supply.minimum_stock }} unidades</p>
+            <p><strong>Estado:</strong> 
+                <span class="status-badge {% if supply.current_stock == 0 %}status-danger{% elif supply.is_low_stock() %}status-warning{% else %}status-success{% endif %}">
+                    {{ supply.stock_status() }}
+                </span>
+            </p>
+            {% if supply.unit_price %}
+                <p><strong>Precio Unitario:</strong> DOP {{ "{:,.2f}".format(supply.unit_price) }}</p>
+            {% endif %}
+            {% if supply.supplier %}
+                <p><strong>Proveedor:</strong> {{ supply.supplier }}</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="form-container">
+        <form action="" method="post" novalidate>
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                {{ form.current_stock.label }}<br>
+                {{ form.current_stock(class="form-control", min="0") }}
+                <small class="help-text">
+                    Ingresa la nueva cantidad de stock. 
+                    Stock actual: {{ supply.current_stock }} unidades.
+                </small>
+                {% if form.current_stock.errors %}
+                    <div class="error-message">{{ form.current_stock.errors[0] }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.notes.label }}<br>
+                {{ form.notes(class="form-control", rows="3") }}
+                <small class="help-text">Opcional: Describe el motivo del cambio (compra, uso, ajuste de inventario, etc.)</small>
+                {% if form.notes.errors %}
+                    <div class="error-message">{{ form.notes.errors[0] }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('main.supplies') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Calculadora de stock -->
+    <div class="stock-calculator">
+        <h3>Calculadora de Stock</h3>
+        <div class="calculator">
+            <label>Agregar al stock actual:</label>
+            <input type="number" id="add-stock" min="0" placeholder="Cantidad a agregar">
+            <button type="button" onclick="addToStock()">Sumar</button>
+            
+            <label>Restar del stock actual:</label>
+            <input type="number" id="subtract-stock" min="0" placeholder="Cantidad a restar">
+            <button type="button" onclick="subtractFromStock()">Restar</button>
+        </div>
+    </div>
+
+    <style>
+        .supply-info {
+            margin-bottom: 30px;
+        }
+        .info-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-success { background-color: #d1edff; color: #0c5460; }
+        .status-warning { background-color: #fff3cd; color: #856404; }
+        .status-danger { background-color: #f8d7da; color: #721c24; }
+        .help-text {
+            color: #6c757d;
+            font-size: 0.875em;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 5px;
+        }
+        .stock-calculator {
+            margin-top: 30px;
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .calculator {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+        .calculator input {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .calculator button {
+            padding: 5px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .calculator button:hover {
+            background: #0056b3;
+        }
+    </style>
+
+    <script>
+        const currentStock = {{ supply.current_stock }};
+        const stockInput = document.getElementById('{{ form.current_stock.id }}');
+
+        function addToStock() {
+            const addAmount = parseInt(document.getElementById('add-stock').value) || 0;
+            if (addAmount > 0) {
+                const newStock = currentStock + addAmount;
+                stockInput.value = newStock;
+                document.getElementById('add-stock').value = '';
+            }
+        }
+
+        function subtractFromStock() {
+            const subtractAmount = parseInt(document.getElementById('subtract-stock').value) || 0;
+            if (subtractAmount > 0) {
+                const newStock = Math.max(0, currentStock - subtractAmount);
+                stockInput.value = newStock;
+                document.getElementById('subtract-stock').value = '';
+            }
+        }
+    </script>
+{% endblock %}

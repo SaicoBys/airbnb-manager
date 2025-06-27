@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }} - Gestor Airbnb</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="brand"><a href="{{ url_for('main.index') }}">Gestor Airbnb</a></div>
+        {% if current_user.is_authenticated %}
+            <div class="nav-links">
+                <a href="{{ url_for('main.index') }}">Panel Principal</a>
+                <a href="{{ url_for('main.clients') }}">Clientes</a>
+                <a href="{{ url_for('main.expenses') }}">Gastos</a>
+                <a href="{{ url_for('main.stays') }}">Estancias</a>
+                <a href="{{ url_for('main.supplies') }}">Suministros</a>
+                {% if current_user.can_view_reports() %}
+                    <a href="{{ url_for('main.reports') }}">Reportes</a>
+                {% endif %}
+                {% if current_user.can_view_monthly_report() %}
+                    <a href="{{ url_for('main.monthly_report') }}">Cierre de Mes</a>
+                {% endif %}
+            </div>
+            <div class="user-info">
+                <span>Hola, <strong>{{ current_user.get_display_name() }}</strong>
+                    {% if current_user.can_manage_users() %}
+                        <small class="user-role">({{ current_user.get_role_display() }})</small>
+                    {% endif %}
+                </span>
+                <a href="{{ url_for('main.logout') }}">Cerrar Sesión</a>
+            </div>
+        {% endif %}
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- ¡NUEVO! Incluimos la librería Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>

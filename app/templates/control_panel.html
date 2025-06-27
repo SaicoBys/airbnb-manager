@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="control-panel-container">
+    <!-- Header del Dashboard -->
+    <div class="panel-header">
+        <div class="panel-icon">
+            <img src="https://img.icons8.com/fluency/96/cottage.png" alt="Panel de Control Icono">
+        </div>
+        <div class="panel-title">
+            <h1>Panel de Control Airbnb</h1>
+            <p>Gestiona todo tu negocio desde un solo lugar</p>
+        </div>
+    </div>
+
+    <!-- Navegación por pestañas -->
+    <div class="tab-navigation">
+        <button class="tab-button" data-tab="overview">
+            <span class="tab-icon">📊</span>Resumen
+        </button>
+        <button class="tab-button" data-tab="clients">
+            <span class="tab-icon">👥</span>Clientes
+        </button>
+        <button class="tab-button" data-tab="stays">
+            <span class="tab-icon">🏨</span>Estancias
+        </button>
+        <button class="tab-button" data-tab="expenses">
+            <span class="tab-icon">💸</span>Gastos
+        </button>
+        <button class="tab-button" data-tab="inventory">
+            <span class="tab-icon">📦</span>Inventario
+        </button>
+        <button class="tab-button" data-tab="finances">
+            <span class="tab-icon">💰</span>Finanzas
+        </button>
+    </div>
+
+    <!-- Contenido de las pestañas -->
+    
+    <!-- Pestaña: Resumen General -->
+    <div id="overview" class="tab-content">
+        <!-- Estadísticas principales -->
+        <div class="dashboard-grid grid-4" style="margin-bottom: 30px;">
+            <div class="stats-widget primary">
+                <div class="icon">👥</div>
+                <div class="number">{{ total_clients }}</div>
+                <div class="label">Clientes Totales</div>
+            </div>
+            <div class="stats-widget success">
+                <div class="icon">🏨</div>
+                <div class="number">{{ active_stays }}</div>
+                <div class="label">Estancias Activas</div>
+            </div>
+            <div class="stats-widget warning">
+                <div class="icon">📦</div>
+                <div class="number">{{ low_stock_count }}</div>
+                <div class="label">Stock Bajo</div>
+            </div>
+            <div class="stats-widget danger">
+                <div class="icon">💸</div>
+                <div class="number">DOP {{ "{:,.0f}".format(monthly_expenses) }}</div>
+                <div class="label">Gastos del Mes</div>
+            </div>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2 class="section-title">⚡ Acciones Rápidas</h2>
+            </div>
+            <div class="quick-actions">
+                <a href="#" class="quick-action" onclick="switchTabAndToggleForm('stays', 'stayForm')">
+                    <div class="action-icon">🏨</div>
+                    <div class="action-title">Nueva Estancia</div>
+                    <div class="action-desc">Registrar nuevo huésped</div>
+                </a>
+                <a href="#" class="quick-action" onclick="switchTabAndToggleForm('expenses', 'expenseForm')">
+                    <div class="action-icon">💸</div>
+                    <div class="action-title">Nuevo Gasto</div>
+                    <div class="action-desc">Registrar gastos del negocio</div>
+                </a>
+                <a href="#" class="quick-action" onclick="switchTabAndToggleForm('clients', 'clientForm')">
+                    <div class="action-icon">👤</div>
+                    <div class="action-title">Nuevo Cliente</div>
+                    <div class="action-desc">Añadir cliente al sistema</div>
+                </a>
+                <a href="#" class="quick-action" onclick="switchTabAndToggleForm('inventory', 'inventoryForm')">
+                    <div class="action-icon">📦</div>
+                    <div class="action-title">Actualizar Stock</div>
+                    <div class="action-desc">Gestionar inventario</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Alertas importantes -->
+        {% if low_stock_supplies %}
+        <div class="dashboard-alert warning">
+            <span>⚠️</span>
+            <div>
+                <strong>Stock Bajo:</strong> {{ low_stock_supplies|length }} producto(s) necesitan reposición.
+                <a href="#" onclick="switchTab('inventory')" style="color: inherit; text-decoration: underline;">Ver detalles</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Resumen financiero y Top Clientes -->
+        <div class="dashboard-grid grid-2">
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3 class="section-title">💰 Finanzas del Mes</h3>
+                </div>
+                <div class="compact-list">
+                    <div class="compact-list-item">
+                        <div class="item-info"><div class="item-title">Ingresos</div></div>
+                        <div class="item-value text-success">DOP {{ "{:,.2f}".format(monthly_income) }}</div>
+                    </div>
+                    <div class="compact-list-item">
+                        <div class="item-info"><div class="item-title">Gastos Elizabeth (Caja)</div></div>
+                        <div class="item-value text-warning">DOP {{ "{:,.2f}".format(elizabeth_expenses) }}</div>
+                    </div>
+                    <div class="compact-list-item">
+                        <div class="item-info"><div class="item-title">Gastos Totales (Negocio)</div></div>
+                        <div class="item-value text-danger">DOP {{ "{:,.2f}".format(total_expenses) }}</div>
+                    </div>
+                    <div class="compact-list-item">
+                        <div class="item-info"><div class="item-title"><strong>Ganancia Neta</strong></div></div>
+                        <div class="item-value {% if monthly_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            <strong>DOP {{ "{:,.2f}".format(monthly_profit) }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3 class="section-title">🏆 Top Clientes</h3>
+                </div>
+                <div class="compact-list">
+                    {% for client in top_clients[:5] %}
+                    <div class="compact-list-item">
+                        <div class="item-info">
+                            <div class="item-title">{{ client.full_name.title() }}</div>
+                            <div class="item-subtitle">{{ client.visit_count() }} visita(s)</div>
+                        </div>
+                        <div class="item-value">DOP {{ "{:,.0f}".format(client.total_spent()) }}</div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No hay datos de clientes.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pestaña: Clientes -->
+    <div id="clients" class="tab-content">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2 class="section-title">👥 Gestión de Clientes</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" onclick="toggleForm('clientForm')"><span>➕</span> Nuevo Cliente</button>
+                </div>
+            </div>
+            <div id="clientForm" class="compact-form" style="display: none;">
+                <h4>➕ Registrar Nuevo Cliente</h4>
+                <form action="{{ url_for('main.add_client_ajax') }}" method="post" class="ajax-form">
+                    <div class="form-inline-grid">
+                        <div class="form-group"><label for="client_name">Nombre Completo *</label><input type="text" id="client_name" name="full_name" required></div>
+                        <div class="form-group"><label for="client_phone">Teléfono *</label><input type="tel" id="client_phone" name="phone_number" required></div>
+                        <div class="form-group"><label for="client_email">Email</label><input type="email" id="client_email" name="email"></div>
+                        <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-success btn-block">Guardar Cliente</button></div>
+                    </div>
+                </form>
+            </div>
+            <table class="data-table">
+                <thead><tr><th>Cliente</th><th>Teléfono</th><th>Visitas</th><th>Última Visita</th><th>Total Gastado</th></tr></thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td><strong>{{ client.full_name.title() }}</strong>{% if client.email %}<br><small class="text-muted">{{ client.email }}</small>{% endif %}</td>
+                        <td>{{ client.phone_number }}</td>
+                        <td class="text-center"><span class="badge badge-primary">{{ client.visit_count() }}</span></td>
+                        <td>{% if client.last_visit() %}{{ client.last_visit().strftime('%d/%m/%Y') }}{% else %}<span class="text-muted">Nunca</span>{% endif %}</td>
+                        <td class="text-right money-amount">DOP {{ "{:,.0f}".format(client.total_spent()) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pestaña: Estancias -->
+    <div id="stays" class="tab-content">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2 class="section-title">🏨 Gestión de Estancias</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" onclick="toggleForm('stayForm')"><span>➕</span> Nueva Estancia</button>
+                </div>
+            </div>
+            <div id="stayForm" class="compact-form" style="display: none;">
+                <h4>🏨 Registrar Nueva Estancia</h4>
+                <form action="{{ url_for('main.add_stay_ajax') }}" method="post" class="ajax-form">
+                    <div class="form-inline-grid">
+                        <div class="form-group"><label for="stay_client">Cliente *</label><select id="stay_client" name="client_id" required><option value="">Seleccionar...</option>{% for client in clients %}<option value="{{ client.id }}">{{ client.full_name }}</option>{% endfor %}</select></div>
+                        <div class="form-group"><label for="stay_room">Habitación *</label><select id="stay_room" name="room_id" required><option value="">Seleccionar...</option>{% for room in rooms %}<option value="{{ room.id }}">{{ room.name }}</option>{% endfor %}</select></div>
+                        <div class="form-group"><label for="stay_checkin">Check-in *</label><input type="datetime-local" id="stay_checkin" name="check_in_date" required></div>
+                        <div class="form-group"><label for="stay_checkout">Check-out</label><input type="datetime-local" id="stay_checkout" name="check_out_date"></div>
+                        <div class="form-group"><label for="stay_channel">Canal Reserva</label><select id="stay_channel" name="booking_channel"><option value="Directo">Directo</option><option value="Airbnb">Airbnb</option><option value="Booking.com">Booking.com</option></select></div>
+                        <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-success btn-block">Crear Estancia</button></div>
+                    </div>
+                </form>
+            </div>
+            <table class="data-table">
+                <thead><tr><th>Cliente</th><th>Habitación</th><th>Check-in</th><th>Check-out</th><th>Canal</th><th>Total Pagado</th></tr></thead>
+                <tbody>
+                    {% for stay in recent_stays %}
+                    <tr>
+                        <td><strong>{{ stay.client.full_name.title() }}</strong></td>
+                        <td>{{ stay.room.name }}</td>
+                        <td>{{ stay.check_in_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{% if stay.check_out_date %}{{ stay.check_out_date.strftime('%d/%m/%Y %H:%M') }}{% else %}<span class="badge badge-success">Activa</span>{% endif %}</td>
+                        <td><span class="badge badge-info">{{ stay.booking_channel }}</span></td>
+                        <td class="text-right money-amount">DOP {{ "{:,.0f}".format(stay.total_paid()) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pestaña: Gastos -->
+    <div id="expenses" class="tab-content">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2 class="section-title">💸 Gestión de Gastos</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" onclick="toggleForm('expenseForm')"><span>➕</span> Nuevo Gasto</button>
+                </div>
+            </div>
+            <div id="expenseForm" class="compact-form" style="display: none;">
+                <h4>💸 Registrar Nuevo Gasto</h4>
+                <form action="{{ url_for('main.add_expense_ajax') }}" method="post" class="ajax-form">
+                    <div class="form-inline-grid">
+                        <div class="form-group"><label for="expense_desc">Descripción *</label><input type="text" id="expense_desc" name="description" required></div>
+                        <div class="form-group"><label for="expense_amount">Monto (DOP) *</label><input type="number" step="0.01" id="expense_amount" name="amount" required></div>
+                        <div class="form-group"><label for="expense_category">Categoría</label><select id="expense_category" name="category"><option value="Suministros">Suministros</option><option value="Servicios">Servicios</option><option value="Mantenimiento">Mantenimiento</option></select></div>
+                        <div class="form-group"><label for="expense_method">Método Pago</label><select id="expense_method" name="payment_method"><option value="Efectivo">Efectivo</option><option value="Tarjeta">Tarjeta</option></select></div>
+                        <div class="form-group"><label for="expense_paidby">Pagado por *</label><select id="expense_paidby" name="paid_by_user_id" required>{% for user in users %}<option value="{{ user.id }}">{{ user.get_display_name() }}</option>{% endfor %}</select></div>
+                        <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-success btn-block">Guardar Gasto</button></div>
+                    </div>
+                </form>
+            </div>
+            <table class="data-table">
+                <thead><tr><th>Fecha</th><th>Descripción</th><th>Monto</th><th>Pagado por</th><th>Impacto Caja</th></tr></thead>
+                <tbody>
+                    {% for expense in recent_expenses %}
+                    <tr class="{% if expense.affects_cash_closure() %}employee-expense{% endif %}">
+                        <td>{{ expense.expense_date.strftime('%d/%m/%Y') }}</td>
+                        <td><strong>{{ expense.description }}</strong></td>
+                        <td class="text-right money-amount">DOP {{ "{:,.2f}".format(expense.amount) }}</td>
+                        <td>{{ expense.paid_by.get_display_name() if expense.paid_by else 'N/A' }}</td>
+                        <td class="text-center">{% if expense.affects_cash_closure() %}<span class="badge badge-warning">Sí</span>{% else %}<span class="badge badge-secondary">No</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pestaña: Inventario -->
+    <div id="inventory" class="tab-content">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2 class="section-title">📦 Gestión de Inventario</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" onclick="toggleForm('inventoryForm')"><span>🔄</span> Actualizar Stock</button>
+                </div>
+            </div>
+            <div id="inventoryForm" class="compact-form" style="display: none;">
+                <h4>🔄 Actualizar Stock de Producto</h4>
+                <form action="{{ url_for('main.update_stock_ajax') }}" method="post" class="ajax-form">
+                    <div class="form-inline-grid">
+                        <div class="form-group"><label for="supply_select">Producto *</label><select id="supply_select" name="supply_id" required><option value="">Seleccionar...</option>{% for supply in supplies %}<option value="{{ supply.id }}">{{ supply.name }}</option>{% endfor %}</select></div>
+                        <div class="form-group"><label for="stock_change">Cambio (+/-)</label><input type="number" id="stock_change" name="quantity_change" placeholder="+10 o -5" required></div>
+                        <div class="form-group"><label for="stock_reason">Motivo</label><select id="stock_reason" name="reason"><option value="Compra">Compra</option><option value="Uso">Uso</option><option value="Ajuste">Ajuste</option></select></div>
+                        <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-success btn-block">Actualizar Stock</button></div>
+                    </div>
+                </form>
+            </div>
+            <table class="data-table">
+                <thead><tr><th>Producto</th><th>Categoría</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Estado</th></tr></thead>
+                <tbody>
+                    {% for supply in supplies %}
+                    <tr>
+                        <td><strong>{{ supply.name }}</strong></td>
+                        <td>{{ supply.category }}</td>
+                        <td class="text-center"><strong>{{ supply.current_stock }}</strong></td>
+                        <td class="text-center">{{ supply.minimum_stock }}</td>
+                        <td class="text-center">{% if supply.is_low_stock() %}<span class="badge badge-danger">Bajo</span>{% else %}<span class="badge badge-success">OK</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pestaña: Finanzas -->
+    <div id="finances" class="tab-content">
+        <p>Contenido de la pestaña de Finanzas irá aquí...</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE PESTAÑAS ---
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    window.switchTab = function(tabId) {
+        tabContents.forEach(content => {
+            content.style.display = 'none';
+            content.classList.remove('active');
+        });
+        tabButtons.forEach(button => {
+            button.classList.remove('active');
+        });
+
+        const activeContent = document.getElementById(tabId);
+        const activeButton = document.querySelector(`.tab-button[data-tab='${tabId}']`);
+
+        if (activeContent) {
+            activeContent.style.display = 'block';
+            activeContent.classList.add('active');
+        }
+        if (activeButton) {
+            activeButton.classList.add('active');
+        }
+    };
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            switchTab(tabId);
+        });
+    });
+
+    // Abrir la primera pestaña por defecto
+    if (tabButtons.length > 0) {
+        switchTab(tabButtons[0].getAttribute('data-tab'));
+    }
+
+    // --- LÓGICA DE FORMULARIOS Y ACCIONES RÁPIDAS ---
+    window.toggleForm = function(formId) {
+        const form = document.getElementById(formId);
+        if (form) {
+            const isVisible = form.style.display === 'block';
+            form.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    };
+    
+    window.switchTabAndToggleForm = function(tabId, formId) {
+        switchTab(tabId);
+        setTimeout(() => {
+            toggleForm(formId);
+        }, 100);
+    };
+
+    // --- LÓGICA DE ALERTAS ---
+    window.showAlert = function(type, message) {
+        const container = document.querySelector('.control-panel-container');
+        if (!container) return;
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `dashboard-alert ${type} fade-in`;
+        alertDiv.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> <div>${message}</div>`;
+        
+        container.insertBefore(alertDiv, container.firstChild);
+
+        setTimeout(() => {
+            alertDiv.classList.add('fade-out');
+            alertDiv.addEventListener('transitionend', () => alertDiv.remove());
+        }, 5000);
+    };
+
+    // --- LÓGICA DE FORMULARIOS AJAX ---
+    document.querySelectorAll('.ajax-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.innerHTML = 'Guardando...';
+            submitBtn.disabled = true;
+
+            fetch(this.action, { method: 'POST', body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    showAlert(data.success ? 'success' : 'danger', data.message);
+                    if (data.success) {
+                        this.reset();
+                        // Opcional: recargar la página para ver los cambios
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
+                })
+                .catch(error => showAlert('danger', 'Error de conexión.'))
+                .finally(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

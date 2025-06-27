@@ -1,0 +1,145 @@
+/* ==========================================================================
+   ESTILOS BASE - Airbnb Manager
+   ========================================================================== */
+
+/* Variables CSS para consistencia */
+:root {
+    --primary-color: #007bff;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --muted-color: #6c757d;
+    --border-color: #dee2e6;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --border-radius: 4px;
+    --box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    --transition: 0.2s ease;
+}
+
+/* Estilos Generales */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.container {
+    padding: 20px;
+    max-width: 1060px;
+    margin: auto;
+}
+
+/* Layout y Grid */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.page-header h1 {
+    margin: 0;
+    color: var(--dark-color);
+}
+
+/* Responsive Grid */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .grid-2,
+    .grid-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .container {
+        padding: 10px;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+}
+
+/* Utilidades */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.text-muted { color: var(--muted-color); }
+.text-success { color: var(--success-color); }
+.text-danger { color: var(--danger-color); }
+.text-warning { color: var(--warning-color); }
+.text-info { color: var(--info-color); }
+
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
+
+.mt-0 { margin-top: 0; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 2rem; }
+
+/* Cards y contenedores */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    margin: 0;
+    color: var(--dark-color);
+}
+
+/* Estados vacíos */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: var(--box-shadow);
+}
+
+.empty-state h3 {
+    color: var(--muted-color);
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    color: var(--muted-color);
+    margin-bottom: 20px;
+}

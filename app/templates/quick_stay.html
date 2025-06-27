@@ -1,0 +1,873 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="unified-stay-container">
+    <!-- Header del Formulario -->
+    <div class="form-header">
+        <h1>🏨 Registro Unificado de Estancia</h1>
+        <p>Sistema inteligente para registrar clientes, estancias y pagos</p>
+    </div>
+
+    <!-- Contenedor del Formulario SPA -->
+    <div class="spa-form-container">
+        <form id="unifiedStayForm" method="POST">
+            {{ form.hidden_tag() }}
+            
+            <!-- Sección 1: Búsqueda de Cliente -->
+            <div class="form-section active" id="section-client">
+                <div class="section-header">
+                    <h3>📱 Información del Cliente</h3>
+                    <div class="section-status" id="client-status">
+                        <span class="status-indicator pending">Pendiente</span>
+                    </div>
+                </div>
+                
+                <div class="form-grid grid-2">
+                    <div class="form-group">
+                        {{ form.phone_search.label(class="form-label") }}
+                        {{ form.phone_search(class="form-control phone-mask", placeholder="(809) 000-0000") }}
+                        <div class="form-hint">El sistema buscará automáticamente el cliente</div>
+                        <div id="phone-feedback" class="form-feedback"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.client_name.label(class="form-label") }}
+                        {{ form.client_name(class="form-control") }}
+                        <div id="name-feedback" class="form-feedback"></div>
+                    </div>
+                </div>
+                
+                <div class="form-grid grid-2">
+                    <div class="form-group">
+                        {{ form.client_email.label(class="form-label") }}
+                        {{ form.client_email(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.client_notes.label(class="form-label") }}
+                        {{ form.client_notes(class="form-control", rows="2") }}
+                    </div>
+                </div>
+                
+                <!-- Información del Cliente Existente -->
+                <div id="client-info" class="client-info-panel" style="display: none;">
+                    <div class="info-header">
+                        <h4>✅ Cliente Encontrado</h4>
+                    </div>
+                    <div class="info-content" id="client-details"></div>
+                </div>
+            </div>
+            
+            <!-- Sección 2: Fechas de Estancia -->
+            <div class="form-section" id="section-dates">
+                <div class="section-header">
+                    <h3>📅 Fechas de Estancia</h3>
+                    <div class="section-status" id="dates-status">
+                        <span class="status-indicator pending">Pendiente</span>
+                    </div>
+                </div>
+                
+                <div class="form-grid grid-3">
+                    <div class="form-group">
+                        {{ form.check_in_date.label(class="form-label") }}
+                        {{ form.check_in_date(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.check_out_date.label(class="form-label") }}
+                        {{ form.check_out_date(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Duración</label>
+                        <div class="duration-display" id="stay-duration">
+                            <span class="duration-number">0</span> noches
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Alertas de Fechas -->
+                <div id="date-alerts" class="date-alerts"></div>
+            </div>
+            
+            <!-- Sección 3: Disponibilidad de Habitaciones -->
+            <div class="form-section" id="section-rooms">
+                <div class="section-header">
+                    <h3>🏠 Selección de Habitación</h3>
+                    <div class="section-status" id="rooms-status">
+                        <span class="status-indicator pending">Pendiente</span>
+                    </div>
+                </div>
+                
+                <!-- Grid de Habitaciones -->
+                <div class="room-grid" id="room-grid">
+                    {% for room in rooms %}
+                    <div class="room-card" data-room-id="{{ room.id }}">
+                        <div class="room-header">
+                            <h4>{{ room.name }}</h4>
+                            <span class="room-tier">{{ room.get_tier_display() }}</span>
+                        </div>
+                        <div class="room-status available">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Disponible</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Selector de Habitación -->
+                <div class="form-group">
+                    {{ form.room_selection.label(class="form-label") }}
+                    {{ form.room_selection(class="form-control") }}
+                    <div id="room-feedback" class="form-feedback"></div>
+                </div>
+                
+                <!-- Soluciones de Reserva -->
+                <div id="booking-solutions" class="booking-solutions" style="display: none;">
+                    <h4>💡 Soluciones Sugeridas</h4>
+                    <div id="solutions-list"></div>
+                </div>
+            </div>
+            
+            <!-- Sección 4: Detalles de la Reserva -->
+            <div class="form-section" id="section-booking">
+                <div class="section-header">
+                    <h3>📋 Detalles de la Reserva</h3>
+                    <div class="section-status" id="booking-status">
+                        <span class="status-indicator pending">Pendiente</span>
+                    </div>
+                </div>
+                
+                <div class="form-grid grid-2">
+                    <div class="form-group">
+                        {{ form.booking_channel.label(class="form-label") }}
+                        {{ form.booking_channel(class="form-control") }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.payment_method.label(class="form-label") }}
+                        {{ form.payment_method(class="form-control") }}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    {{ form.payment_amount.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-prefix">DOP</span>
+                        {{ form.payment_amount(class="form-control", placeholder="0.00") }}
+                    </div>
+                    <div class="form-hint">Monto del pago inicial o completo</div>
+                </div>
+            </div>
+            
+            <!-- Resumen y Acciones -->
+            <div class="form-summary">
+                <div class="summary-header">
+                    <h3>📊 Resumen de la Operación</h3>
+                </div>
+                
+                <div class="summary-content" id="operation-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Cliente:</span>
+                        <span class="summary-value" id="summary-client">Pendiente</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Fechas:</span>
+                        <span class="summary-value" id="summary-dates">Pendiente</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Habitación:</span>
+                        <span class="summary-value" id="summary-room">Pendiente</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Pago:</span>
+                        <span class="summary-value" id="summary-payment">Pendiente</span>
+                    </div>
+                </div>
+                
+                <!-- Botones de Acción -->
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-secondary" id="saveClientBtn" onclick="saveClientOnly()">
+                        💾 Guardar Solo Cliente
+                    </button>
+                    <button type="button" class="btn btn-primary" id="saveFullStayBtn" onclick="saveFullStay()">
+                        🏨 Guardar Estancia Completa
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Incluir Inputmask.js para máscara de teléfono -->
+<script src="https://cdn.jsdelivr.net/npm/inputmask@5.0.8/dist/inputmask.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar máscara de teléfono
+    const phoneInput = document.getElementById('phone_search');
+    if (phoneInput) {
+        Inputmask("(999) 999-9999").mask(phoneInput);
+    }
+    
+    // Variables globales
+    let currentClient = null;
+    let roomAvailability = {};
+    let selectedDates = {};
+    
+    // Event Listeners
+    phoneInput?.addEventListener('blur', searchClientByPhone);
+    document.getElementById('check_in_date')?.addEventListener('change', updateRoomAvailability);
+    document.getElementById('check_out_date')?.addEventListener('change', updateRoomAvailability);
+    
+    // Función para buscar cliente por teléfono
+    async function searchClientByPhone() {
+        const phoneNumber = phoneInput.value.trim();
+        if (!phoneNumber) return;
+        
+        try {
+            const response = await fetch('/ajax/get_client_by_phone', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `phone_number=${encodeURIComponent(phoneNumber)}&csrf_token=${getCSRFToken()}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.found) {
+                // Cliente encontrado
+                currentClient = data.client;
+                document.getElementById('client_name').value = data.client.name;
+                document.getElementById('client_email').value = data.client.email;
+                document.getElementById('client_notes').value = data.client.notes;
+                
+                // Mostrar información del cliente
+                showClientInfo(data.client);
+                updateSectionStatus('client', 'completed');
+            } else {
+                // Cliente no encontrado
+                currentClient = null;
+                hideClientInfo();
+                showFeedback('phone-feedback', 'Cliente no encontrado. Puedes crear uno nuevo.', 'info');
+                updateSectionStatus('client', 'new');
+            }
+        } catch (error) {
+            console.error('Error al buscar cliente:', error);
+            showFeedback('phone-feedback', 'Error al buscar cliente', 'error');
+        }
+    }
+    
+    // Función para actualizar disponibilidad de habitaciones
+    async function updateRoomAvailability() {
+        const checkIn = document.getElementById('check_in_date').value;
+        const checkOut = document.getElementById('check_out_date').value;
+        
+        if (!checkIn || !checkOut) return;
+        
+        selectedDates = { checkIn, checkOut };
+        
+        // Calcular duración
+        const duration = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
+        document.getElementById('stay-duration').innerHTML = `<span class="duration-number">${duration}</span> noches`;
+        
+        try {
+            const response = await fetch('/ajax/get_room_availability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `check_in=${checkIn}&check_out=${checkOut}&csrf_token=${getCSRFToken()}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                roomAvailability = data;
+                updateRoomGrid(data.rooms);
+                updateRoomSelector(data.rooms);
+                findBookingSolutions(checkIn, checkOut);
+                updateSectionStatus('dates', 'completed');
+            }
+        } catch (error) {
+            console.error('Error al verificar disponibilidad:', error);
+        }
+    }
+    
+    // Función para encontrar soluciones de reserva
+    async function findBookingSolutions(checkIn, checkOut) {
+        try {
+            const response = await fetch('/ajax/find_booking_solutions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `check_in=${checkIn}&check_out=${checkOut}&csrf_token=${getCSRFToken()}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.solutions.length > 0) {
+                showBookingSolutions(data.solutions);
+            }
+        } catch (error) {
+            console.error('Error al encontrar soluciones:', error);
+        }
+    }
+    
+    // Funciones auxiliares
+    function showClientInfo(client) {
+        const infoPanel = document.getElementById('client-info');
+        const details = document.getElementById('client-details');
+        
+        details.innerHTML = `
+            <div class="client-stats">
+                <div class="stat">
+                    <span class="stat-label">Visitas:</span>
+                    <span class="stat-value">${client.visit_count}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Total Gastado:</span>
+                    <span class="stat-value">DOP ${client.total_spent.toLocaleString()}</span>
+                </div>
+            </div>
+        `;
+        
+        infoPanel.style.display = 'block';
+        updateSummary('client', `${client.name} (${client.visit_count} visitas)`);
+    }
+    
+    function hideClientInfo() {
+        document.getElementById('client-info').style.display = 'none';
+    }
+    
+    function updateRoomGrid(rooms) {
+        const roomCards = document.querySelectorAll('.room-card');
+        
+        roomCards.forEach(card => {
+            const roomId = parseInt(card.dataset.roomId);
+            const room = rooms.find(r => r.id === roomId);
+            const statusElement = card.querySelector('.room-status');
+            
+            if (room && room.available) {
+                statusElement.className = 'room-status available';
+                statusElement.innerHTML = '<span class="status-dot"></span><span class="status-text">Disponible</span>';
+            } else {
+                statusElement.className = 'room-status occupied';
+                statusElement.innerHTML = '<span class="status-dot"></span><span class="status-text">Ocupada</span>';
+            }
+        });
+    }
+    
+    function updateRoomSelector(rooms) {
+        const selector = document.getElementById('room_selection');
+        selector.innerHTML = '<option value="">Seleccionar habitación...</option>';
+        
+        rooms.forEach(room => {
+            if (room.available) {
+                const option = document.createElement('option');
+                option.value = room.id;
+                option.textContent = `${room.name} - ${room.tier_display}`;
+                selector.appendChild(option);
+            }
+        });
+        
+        // Event listener para selección de habitación
+        selector.addEventListener('change', function() {
+            if (this.value) {
+                const selectedRoom = rooms.find(r => r.id == this.value);
+                updateSummary('room', `${selectedRoom.name} (${selectedRoom.tier_display})`);
+                updateSectionStatus('rooms', 'completed');
+            }
+        });
+    }
+    
+    function showBookingSolutions(solutions) {
+        const solutionsContainer = document.getElementById('booking-solutions');
+        const solutionsList = document.getElementById('solutions-list');
+        
+        solutionsList.innerHTML = '';
+        
+        solutions.forEach(solution => {
+            const solutionDiv = document.createElement('div');
+            solutionDiv.className = 'solution-item';
+            
+            if (solution.type === 'single') {
+                solutionDiv.innerHTML = `
+                    <div class="solution-header">✅ Habitación Disponible</div>
+                    <div class="solution-details">
+                        ${solution.room_name} (${solution.tier}) - ${solution.total_nights} noches
+                    </div>
+                `;
+            } else if (solution.type === 'split_needed') {
+                solutionDiv.innerHTML = `
+                    <div class="solution-header">⚠️ Se Requiere División</div>
+                    <div class="solution-details">${solution.message}</div>
+                `;
+            }
+            
+            solutionsList.appendChild(solutionDiv);
+        });
+        
+        solutionsContainer.style.display = 'block';
+    }
+    
+    function updateSectionStatus(section, status) {
+        const statusElement = document.getElementById(`${section}-status`);
+        const indicator = statusElement.querySelector('.status-indicator');
+        
+        indicator.className = `status-indicator ${status}`;
+        indicator.textContent = status === 'completed' ? 'Completado' : 
+                               status === 'new' ? 'Nuevo' : 'Pendiente';
+    }
+    
+    function updateSummary(field, value) {
+        const summaryElement = document.getElementById(`summary-${field}`);
+        if (summaryElement) {
+            summaryElement.textContent = value;
+        }
+    }
+    
+    function showFeedback(elementId, message, type) {
+        const feedbackElement = document.getElementById(elementId);
+        if (feedbackElement) {
+            feedbackElement.textContent = message;
+            feedbackElement.className = `form-feedback ${type}`;
+        }
+    }
+    
+    function getCSRFToken() {
+        return document.querySelector('[name=csrf_token]').value;
+    }
+    
+    // Funciones globales para los botones
+    window.saveClientOnly = async function() {
+        const formData = new FormData(document.getElementById('unifiedStayForm'));
+        formData.append('action', 'save_client_only');
+        
+        try {
+            const response = await fetch('/quick_stay', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                showAlert('success', 'Cliente guardado exitosamente');
+            } else {
+                showAlert('error', 'Error al guardar cliente');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('error', 'Error de conexión');
+        }
+    };
+    
+    window.saveFullStay = async function() {
+        const formData = new FormData(document.getElementById('unifiedStayForm'));
+        formData.append('action', 'save_full_stay');
+        
+        try {
+            const response = await fetch('/quick_stay', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                showAlert('success', 'Estancia registrada exitosamente');
+                setTimeout(() => {
+                    window.location.href = '/stays';
+                }, 2000);
+            } else {
+                showAlert('error', 'Error al guardar estancia');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('error', 'Error de conexión');
+        }
+    };
+    
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.textContent = message;
+        
+        document.body.insertBefore(alertDiv, document.body.firstChild);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+});
+</script>
+
+<style>
+/* Estilos específicos para el formulario unificado */
+.unified-stay-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.form-header h1 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.spa-form-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+}
+
+.form-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    transition: border-color 0.3s ease;
+}
+
+.form-section.active {
+    border-color: #007bff;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h3 {
+    margin: 0;
+    color: #495057;
+}
+
+.status-indicator {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-indicator.pending {
+    background: #ffc107;
+    color: #856404;
+}
+
+.status-indicator.completed {
+    background: #28a745;
+    color: white;
+}
+
+.status-indicator.new {
+    background: #17a2b8;
+    color: white;
+}
+
+.form-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.grid-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.form-feedback {
+    margin-top: 5px;
+    font-size: 12px;
+}
+
+.form-feedback.info {
+    color: #17a2b8;
+}
+
+.form-feedback.error {
+    color: #dc3545;
+}
+
+.client-info-panel {
+    background: #e8f5e8;
+    border: 1px solid #28a745;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.client-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #28a745;
+}
+
+.duration-display {
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.duration-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.room-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.room-card {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.room-card:hover {
+    border-color: #007bff;
+    transform: translateY(-2px);
+}
+
+.room-header h4 {
+    margin: 0 0 5px 0;
+    color: #495057;
+}
+
+.room-tier {
+    font-size: 12px;
+    background: #f8f9fa;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.room-status {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.room-status.available .status-dot {
+    background: #28a745;
+}
+
+.room-status.occupied .status-dot {
+    background: #dc3545;
+}
+
+.input-group {
+    display: flex;
+}
+
+.input-prefix {
+    background: #e9ecef;
+    border: 1px solid #ced4da;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    padding: 10px 12px;
+    color: #495057;
+    font-weight: bold;
+}
+
+.input-group .form-control {
+    border-radius: 0 4px 4px 0;
+}
+
+.form-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.summary-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.summary-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.summary-value {
+    color: #007bff;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.booking-solutions {
+    margin-top: 20px;
+    padding: 15px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+}
+
+.solution-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+}
+
+.solution-header {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 6px;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .room-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

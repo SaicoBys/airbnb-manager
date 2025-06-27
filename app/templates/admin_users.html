@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>🔧 Administración de Usuarios</h1>
+        <p class="admin-note">Esta página solo es visible para el dueño del sistema.</p>
+    </div>
+
+    <!-- Estadísticas de usuarios -->
+    <div class="user-stats">
+        <div class="stat-card">
+            <h3>Total Usuarios</h3>
+            <div class="stat-number">{{ user_stats.total_users }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Dueños</h3>
+            <div class="stat-number">{{ user_stats.owners }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Socias</h3>
+            <div class="stat-number">{{ user_stats.partners }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Empleadas</h3>
+            <div class="stat-number">{{ user_stats.employees }}</div>
+        </div>
+    </div>
+
+    <!-- Lista de usuarios -->
+    <div class="dashboard-section" style="margin-top: 30px;">
+        <h2>Lista de Usuarios</h2>
+        {% if users %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Permisos</th>
+                        <th>Tareas Asignadas</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr class="{% if user.is_owner() %}owner-row{% elif user.is_partner() %}partner-row{% else %}employee-row{% endif %}">
+                        <td>{{ user.id }}</td>
+                        <td>
+                            <strong>{{ user.username }}</strong>
+                            {% if user.id == current_user.id %}
+                                <span class="current-user">(Tú)</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="role-badge role-{{ user.role }}">
+                                {{ user.get_role_display() }}
+                            </span>
+                        </td>
+                        <td>
+                            <ul class="permissions-list">
+                                {% if user.can_view_reports() %}
+                                    <li>✅ Ver Reportes Completos</li>
+                                {% else %}
+                                    <li>❌ Ver Reportes Completos</li>
+                                {% endif %}
+                                {% if user.can_view_monthly_report() %}
+                                    <li>✅ Ver Cierre de Mes</li>
+                                {% else %}
+                                    <li>❌ Ver Cierre de Mes</li>
+                                {% endif %}
+                                {% if user.can_manage_finances() %}
+                                    <li>✅ Gestionar Finanzas</li>
+                                {% else %}
+                                    <li>❌ Gestionar Finanzas</li>
+                                {% endif %}
+                                {% if user.can_delete_data() %}
+                                    <li>✅ Eliminar Datos</li>
+                                {% else %}
+                                    <li>❌ Eliminar Datos</li>
+                                {% endif %}
+                                {% if user.can_manage_users() %}
+                                    <li>✅ Gestionar Usuarios</li>
+                                {% else %}
+                                    <li>❌ Gestionar Usuarios</li>
+                                {% endif %}
+                            </ul>
+                        </td>
+                        <td>{{ user.tasks.count() }} tareas</td>
+                        <td>
+                            <span class="status-badge status-active">Activo</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No hay usuarios registrados.</p>
+        {% endif %}
+    </div>
+
+    <!-- Información de seguridad -->
+    <div class="security-info">
+        <h3>🔒 Información de Seguridad</h3>
+        <div class="security-grid">
+            <div class="security-item">
+                <h4>Control de Acceso</h4>
+                <p>✅ Sistema de roles implementado</p>
+                <p>✅ Restricciones por permisos activas</p>
+                <p>✅ Validaciones en frontend y backend</p>
+            </div>
+            <div class="security-item">
+                <h4>Auditoría</h4>
+                <p>✅ Logging de acciones críticas</p>
+                <p>✅ Registro de accesos a rutas sensibles</p>
+                <p>✅ Seguimiento de modificaciones de datos</p>
+            </div>
+            <div class="security-item">
+                <h4>Roles Definidos</h4>
+                <p><strong>Dueño:</strong> Acceso completo al sistema</p>
+                <p><strong>Socia:</strong> Gestión y reportes financieros</p>
+                <p><strong>Empleada:</strong> Operaciones básicas + cierre de mes para cuadre de caja</p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .admin-note {
+            color: #6c757d;
+            font-style: italic;
+            margin-top: -10px;
+        }
+        
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1em;
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        
+        .owner-row { background-color: #fff3cd; }
+        .partner-row { background-color: #d1ecf1; }
+        .employee-row { background-color: #f8f9fa; }
+        
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        
+        .role-dueño { background-color: #dc3545; color: white; }
+        .role-socia { background-color: #17a2b8; color: white; }
+        .role-empleada { background-color: #6c757d; color: white; }
+        
+        .current-user {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+        
+        .permissions-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .permissions-list li {
+            font-size: 0.85em;
+            margin: 2px 0;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .status-active { background-color: #d4edda; color: #155724; }
+        
+        .security-info {
+            margin-top: 40px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .security-item h4 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        
+        .security-item p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+    </style>
+{% endblock %}

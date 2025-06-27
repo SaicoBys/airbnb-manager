@@ -1,0 +1,382 @@
+/* ==========================================================================
+   REPORTES Y DASHBOARD - Airbnb Manager
+   ========================================================================== */
+
+/* Resumen de Reportes */
+.report-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.summary-card {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--box-shadow);
+    text-align: center;
+    border-left: 4px solid var(--primary-color);
+    transition: transform var(--transition);
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.summary-card h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: var(--muted-color);
+    font-weight: 600;
+}
+
+.summary-card .amount {
+    font-size: 2em;
+    font-weight: bold;
+    margin: 10px 0 0 0;
+    line-height: 1.2;
+}
+
+.summary-card .sub-amount {
+    font-size: 1em;
+    color: var(--muted-color);
+    margin-top: 5px;
+}
+
+.summary-card .amount.success {
+    color: var(--success-color);
+}
+
+.summary-card .amount.danger {
+    color: var(--danger-color);
+}
+
+.summary-card .amount.info {
+    color: var(--info-color);
+}
+
+.summary-card .amount.warning {
+    color: #856404;
+}
+
+/* Grids de detalles */
+.details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.dashboard-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--box-shadow);
+}
+
+.dashboard-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--dark-color);
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+/* Gastos por persona */
+.person-expenses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.person-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border-left: 4px solid;
+    transition: all var(--transition);
+}
+
+.person-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.person-card.elizabeth {
+    border-left-color: var(--danger-color);
+}
+
+.person-card.alejandrina {
+    border-left-color: var(--warning-color);
+}
+
+.person-card.owners {
+    border-left-color: #6f42c1;
+}
+
+.person-card h4 {
+    margin: 0 0 15px 0;
+    color: #495057;
+}
+
+.expense-amount {
+    font-size: 2em;
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 10px;
+    font-family: 'Courier New', monospace;
+}
+
+.person-card p {
+    margin: 0 0 15px 0;
+    color: var(--muted-color);
+    font-size: 0.9em;
+}
+
+.impact-note {
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.impact-note.cash-impact {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid var(--warning-color);
+}
+
+.impact-note.business-only {
+    background: #e7f3ff;
+    color: #004085;
+    border: 1px solid var(--primary-color);
+}
+
+/* Explicación del sistema */
+.expense-explanation {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.expense-explanation h5 {
+    margin: 0 0 15px 0;
+    color: #495057;
+}
+
+.explanation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.explanation-item {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.explanation-item strong {
+    color: #495057;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.explanation-item p {
+    margin: 0;
+    font-size: 0.9em;
+    line-height: 1.4;
+    color: var(--muted-color);
+}
+
+/* Análisis de clientes */
+.client-analytics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.analytics-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border-left: 4px solid var(--primary-color);
+}
+
+.analytics-card.new-clients {
+    border-left-color: var(--success-color);
+}
+
+.analytics-card.returning-clients {
+    border-left-color: var(--warning-color);
+}
+
+.analytics-card h4 {
+    margin: 0 0 10px 0;
+    color: #495057;
+    font-size: 0.9em;
+}
+
+.analytics-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 5px;
+    font-family: 'Courier New', monospace;
+}
+
+.analytics-card small {
+    color: var(--muted-color);
+    font-size: 0.8em;
+}
+
+/* Métricas de retención */
+.retention-metrics {
+    background: #e7f3ff;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #b3d9ff;
+}
+
+.retention-metrics h5 {
+    margin: 0 0 15px 0;
+    color: #004085;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.metric-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    background: white;
+    border-radius: 4px;
+}
+
+.metric-label {
+    color: var(--muted-color);
+    font-size: 0.9em;
+}
+
+.metric-value {
+    font-weight: bold;
+    color: #495057;
+}
+
+.metric-value.success {
+    color: var(--success-color);
+}
+
+/* Resumen de gastos específico */
+.expense-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.expense-summary .summary-card.employee-expenses {
+    border-left-color: var(--danger-color);
+}
+
+.expense-summary .summary-card.owner-expenses {
+    border-left-color: var(--success-color);
+}
+
+.expense-summary .summary-card.total-expenses {
+    border-left-color: var(--primary-color);
+}
+
+.expense-summary .summary-card .amount {
+    font-size: 2em;
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.expense-summary .summary-card .total {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.expense-summary .summary-card small {
+    color: var(--muted-color);
+    font-size: 0.8em;
+}
+
+/* Sin datos */
+.no-data {
+    text-align: center;
+    color: var(--muted-color);
+    font-style: italic;
+    padding: 40px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .details-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .person-expenses-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .explanation-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .client-analytics {
+        grid-template-columns: 1fr;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .report-summary {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .summary-card {
+        padding: 15px;
+    }
+    
+    .dashboard-section {
+        padding: 15px;
+    }
+    
+    .expense-amount,
+    .analytics-number {
+        font-size: 1.8em;
+    }
+}
+
+/* Gráficos responsivos */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: 20px 0;
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+}

@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>Reporte Financiero General</h1>
+    </div>
+
+    <!-- Tarjetas de Resumen Financiero -->
+    <div class="report-summary">
+        <div class="summary-card">
+            <h2>Ingresos Totales</h2>
+            <!-- ¡CORRECCIÓN! Se usa el formato "{:,.2f}" para añadir comas a los miles. -->
+            <p class="amount success">DOP {{ "{:,.2f}".format(total_income_dop) }}</p>
+            <p class="sub-amount">USD ${{ "{:,.2f}".format(total_income_usd) }}</p>
+        </div>
+        <div class="summary-card">
+            <h2>Gastos del Negocio</h2>
+            <p class="amount danger">DOP {{ "{:,.2f}".format(total_expenses_dop) }}</p>
+            <p class="sub-amount">Rentabilidad real del negocio</p>
+        </div>
+        <div class="summary-card">
+            <h2>Beneficio Neto</h2>
+            <p class="amount info {% if profit_dop < 0 %}danger{% endif %}">
+                DOP {{ "{:,.2f}".format(profit_dop) }}
+            </p>
+            <p class="sub-amount">USD ${{ "{:,.2f}".format(profit_usd) }}</p>
+        </div>
+    </div>
+
+    <!-- Contenedor para los gráficos en dos columnas -->
+    <div class="details-grid">
+        <!-- Gráfico de Ingresos por Habitación -->
+        <div class="dashboard-section">
+            <h2>Ingresos por Habitación</h2>
+            <div class="chart-container">
+                <canvas id="roomIncomeChart" 
+                        data-labels='{{ income_chart_labels|tojson|safe }}' 
+                        data-values='{{ income_chart_data|tojson|safe }}'>
+                </canvas>
+            </div>
+        </div>
+
+        <!-- Gráfico de Gastos por Categoría -->
+        <div class="dashboard-section">
+            <h2>Gastos por Categoría</h2>
+            <div class="chart-container">
+                <canvas id="expenseChart"
+                        data-labels='{{ expense_chart_labels|tojson|safe }}'
+                        data-values='{{ expense_chart_data|tojson|safe }}'>
+                </canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Evolución Financiera Mensual -->
+    <div class="dashboard-section mt-4">
+        <h2>Evolución Financiera Mensual (Año Actual)</h2>
+        <div class="chart-container">
+            <canvas id="financialEvolutionChart" 
+                    data-labels='{{ monthly_labels|tojson|safe }}' 
+                    data-incomes='{{ monthly_income_data|tojson|safe }}'
+                    data-expenses='{{ monthly_expense_data|tojson|safe }}'
+                    data-profits='{{ monthly_profit_data|tojson|safe }}'>
+            </canvas>
+        </div>
+    </div>
+    
+    <!-- Ranking de Clientes Frecuentes -->
+    <div class="dashboard-section mt-4">
+        <h2>Ranking de Clientes Frecuentes</h2>
+        {% if client_frequency %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Posición</th>
+                        <th>Nombre del Cliente</th>
+                        <th>Número de Estancias</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in client_frequency %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ client.full_name }}</td>
+                        <td>{{ client.stay_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No hay suficientes datos de estancias para generar un ranking.</p>
+        {% endif %}
+    </div>
+
+    <!-- Métricas de Ocupación por Habitación -->
+    <div class="dashboard-section mt-4">
+        <h2>Métricas de Ocupación por Habitación</h2>
+        {% if room_metrics %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Habitación</th>
+                        <th>Noches Rentadas</th>
+                        <th>Tasa de Ocupación</th>
+                        <th>Noches Vacías</th>
+                        <th>ADR (Tarifa Promedio)</th>
+                        <th>Ingresos Totales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in room_metrics %}
+                    <tr>
+                        <td><strong>{{ room.room_name }}</strong></td>
+                        <td>{{ room.total_nights }}</td>
+                        <td>{{ room.occupancy_rate }}%</td>
+                        <td>{{ room.empty_nights }}</td>
+                        <td>DOP {{ "{:,.2f}".format(room.adr) }}</td>
+                        <td>DOP {{ "{:,.2f}".format(room.total_income) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No hay suficientes datos de estancias para calcular métricas de ocupación.</p>
+        {% endif %}
+    </div>
+
+    <!-- Contenedor para nuevos gráficos -->
+    <div class="details-grid mt-4">
+        <!-- Gráfico de Canal de Reserva -->
+        <div class="dashboard-section">
+            <h2>Distribución por Canal de Reserva</h2>
+            <div class="chart-container">
+                <canvas id="channelChart" 
+                        data-labels='{{ channel_labels|tojson|safe }}' 
+                        data-values='{{ channel_data|tojson|safe }}'
+                        data-percentages='{{ channel_percentages|tojson|safe }}'>
+                </canvas>
+            </div>
+        </div>
+
+        <!-- Espacio para futuros gráficos -->
+        <div class="dashboard-section">
+            <h2>Análisis Adicional</h2>
+            <div class="chart-container">
+                <p>Espacio reservado para futuras métricas como RevPAR, ventana de reserva, etc.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nueva Sección: Análisis de Gastos por Persona -->
+    <div class="details-grid mt-4">
+        <div class="dashboard-section">
+            <h2>👥 Gastos por Persona</h2>
+            <div class="chart-container">
+                <div class="person-expenses-grid">
+                    <div class="person-card elizabeth">
+                        <h4>👩‍💼 Elizabeth (Empleada)</h4>
+                        <div class="expense-amount">DOP {{ "{:,.2f}".format(elizabeth_expenses_dop) }}</div>
+                        <p>Gastos que afectan su cuadre de caja</p>
+                        <div class="impact-note cash-impact">⚠️ Afecta Cuadre de Caja</div>
+                    </div>
+                    
+                    <div class="person-card alejandrina">
+                        <h4>👩‍💼 Alejandrina (Socia)</h4>
+                        <div class="expense-amount">DOP {{ "{:,.2f}".format(alejandrina_expenses_dop) }}</div>
+                        <p>Gastos pagados por la socia</p>
+                        <div class="impact-note business-only">📊 Solo Rentabilidad</div>
+                    </div>
+                    
+                    <div class="person-card owners">
+                        <h4>👑 Propietarios</h4>
+                        <div class="expense-amount">DOP {{ "{:,.2f}".format(owner_expenses_dop) }}</div>
+                        <p>Gastos pagados por dueños</p>
+                        <div class="impact-note business-only">📊 Solo Rentabilidad</div>
+                    </div>
+                </div>
+                
+                <div class="expense-explanation">
+                    <h5>📋 Explicación del Sistema:</h5>
+                    <div class="explanation-grid">
+                        <div class="explanation-item">
+                            <strong>🎯 Cuadre de Caja (Elizabeth):</strong>
+                            <p>Solo se consideran los gastos que Elizabeth pagó. Esto determina cuánto dinero debe entregar al final del mes.</p>
+                        </div>
+                        <div class="explanation-item">
+                            <strong>📊 Rentabilidad del Negocio:</strong>
+                            <p>Se consideran TODOS los gastos (Elizabeth + Alejandrina + Propietarios) para calcular las ganancias reales del negocio.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de distribución de gastos -->
+        <div class="dashboard-section">
+            <h2>📊 Distribución de Gastos</h2>
+            <div class="chart-container">
+                <canvas id="expenseDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Análisis de Clientes -->
+    <div class="details-grid mt-4">
+        <!-- Top Clientes por Visitas -->
+        <div class="dashboard-section">
+            <h2>🏆 Top Clientes por Visitas</h2>
+            <div class="chart-container">
+                {% if top_clients %}
+                    <table class="clients-ranking">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Teléfono</th>
+                                <th>Visitas</th>
+                                <th>Total Gastado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for client in top_clients[:5] %}
+                            <tr>
+                                <td><strong>{{ client.full_name.title() }}</strong></td>
+                                <td class="phone-number">{{ client.phone_number }}</td>
+                                <td class="visit-count">
+                                    <span class="visit-badge">{{ client.visit_count }}</span>
+                                </td>
+                                <td class="money-amount">DOP {{ "{:,.2f}".format(client.total_spent) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="no-data">No hay datos de clientes disponibles</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Distribución de Frecuencia de Visitas -->
+        <div class="dashboard-section">
+            <h2>📊 Distribución de Visitas</h2>
+            <div class="chart-container">
+                <canvas id="visitDistributionChart" 
+                        data-labels='{{ visit_labels|tojson|safe }}' 
+                        data-values='{{ visit_data|tojson|safe }}'>
+                </canvas>
+            </div>
+        </div>
+
+        <!-- Análisis de Clientes Nuevos vs Recurrentes -->
+        <div class="dashboard-section">
+            <h2>🆕 Clientes este Mes</h2>
+            <div class="chart-container">
+                <div class="client-analytics">
+                    <div class="analytics-card new-clients">
+                        <h4>Nuevos Clientes</h4>
+                        <div class="analytics-number">{{ new_clients_this_month }}</div>
+                        <small>Primera visita este mes</small>
+                    </div>
+                    <div class="analytics-card returning-clients">
+                        <h4>Clientes Recurrentes</h4>
+                        <div class="analytics-number">{{ returning_clients_this_month }}</div>
+                        <small>Han visitado antes</small>
+                    </div>
+                </div>
+                
+                {% set total_this_month = new_clients_this_month + returning_clients_this_month %}
+                {% if total_this_month > 0 %}
+                    <div class="retention-metrics">
+                        <h5>📈 Métricas de Retención</h5>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <span class="metric-label">Tasa de Nuevos:</span>
+                                <span class="metric-value">{{ "%.1f"|format(new_clients_this_month / total_this_month * 100) }}%</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Tasa de Retención:</span>
+                                <span class="metric-value success">{{ "%.1f"|format(returning_clients_this_month / total_this_month * 100) }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- GRÁFICO 1: INGRESOS POR HABITACIÓN ---
+            const incomeChartCanvas = document.getElementById('roomIncomeChart');
+            if (incomeChartCanvas && incomeChartCanvas.dataset.labels) {
+                const incomeLabels = JSON.parse(incomeChartCanvas.dataset.labels);
+                const incomeData = JSON.parse(incomeChartCanvas.dataset.values);
+                new Chart(incomeChartCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: incomeLabels,
+                        datasets: [{
+                            label: 'Ingresos (DOP)',
+                            data: incomeData,
+                            backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return 'DOP ' + value.toLocaleString('en-US'); } } } },
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+
+            // --- GRÁFICO 2: GASTOS POR CATEGORÍA ---
+            const expenseChartCanvas = document.getElementById('expenseChart');
+            if (expenseChartCanvas && expenseChartCanvas.dataset.labels) {
+                const expenseLabels = JSON.parse(expenseChartCanvas.dataset.labels);
+                const expenseData = JSON.parse(expenseChartCanvas.dataset.values);
+                new Chart(expenseChartCanvas.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: expenseLabels,
+                        datasets: [{
+                            label: 'Gastos (DOP)',
+                            data: expenseData,
+                            backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)', 'rgba(75, 192, 192, 0.5)', 'rgba(153, 102, 255, 0.5)'],
+                            borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+
+            // --- GRÁFICO 3: EVOLUCIÓN FINANCIERA ---
+            const evolutionCanvas = document.getElementById('financialEvolutionChart');
+            if(evolutionCanvas && evolutionCanvas.dataset.labels) {
+                const evolutionLabels = JSON.parse(evolutionCanvas.dataset.labels);
+                const incomeSeries = JSON.parse(evolutionCanvas.dataset.incomes);
+                const expenseSeries = JSON.parse(evolutionCanvas.dataset.expenses);
+                const profitSeries = JSON.parse(evolutionCanvas.dataset.profits);
+
+                new Chart(evolutionCanvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: evolutionLabels,
+                        datasets: [
+                            {
+                                label: 'Ingresos (DOP)',
+                                data: incomeSeries,
+                                borderColor: 'rgba(40, 167, 69, 1)',
+                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                                fill: true,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Gastos (DOP)',
+                                data: expenseSeries,
+                                borderColor: 'rgba(220, 53, 69, 1)',
+                                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                                fill: true,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Ganancia Neta (DOP)',
+                                data: profitSeries,
+                                borderColor: 'rgba(0, 123, 255, 1)',
+                                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                                fill: true,
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return 'DOP ' + value.toLocaleString('en-US'); } } } },
+                        responsive: true,
+                        maintainAspectRatio: true
+                    }
+                });
+            }
+
+            // --- GRÁFICO 4: CANAL DE RESERVA ---
+            const channelChartCanvas = document.getElementById('channelChart');
+            if (channelChartCanvas && channelChartCanvas.dataset.labels) {
+                const channelLabels = JSON.parse(channelChartCanvas.dataset.labels);
+                const channelData = JSON.parse(channelChartCanvas.dataset.values);
+                const channelPercentages = JSON.parse(channelChartCanvas.dataset.percentages);
+                
+                new Chart(channelChartCanvas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: channelLabels,
+                        datasets: [{
+                            label: 'Reservas por Canal',
+                            data: channelData,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.8)',  // Rojo para Airbnb
+                                'rgba(54, 162, 235, 0.8)',  // Azul para Booking.com
+                                'rgba(255, 206, 86, 0.8)',  // Amarillo para Directo
+                                'rgba(75, 192, 192, 0.8)',  // Verde para Otro
+                                'rgba(153, 102, 255, 0.8)'  // Morado para canales adicionales
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(153, 102, 255, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const count = context.parsed;
+                                        const percentage = channelPercentages[context.dataIndex];
+                                        return label + ': ' + count + ' reservas (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- GRÁFICO 5: DISTRIBUCIÓN DE VISITAS ---
+            const visitDistributionCanvas = document.getElementById('visitDistributionChart');
+            if (visitDistributionCanvas && visitDistributionCanvas.dataset.labels) {
+                const visitLabels = JSON.parse(visitDistributionCanvas.dataset.labels);
+                const visitData = JSON.parse(visitDistributionCanvas.dataset.values);
+                
+                new Chart(visitDistributionCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: visitLabels,
+                        datasets: [{
+                            label: 'Número de Clientes',
+                            data: visitData,
+                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 2,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const count = context.parsed.y;
+                                        return count + ' cliente' + (count !== 1 ? 's' : '');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- GRÁFICO 6: DISTRIBUCIÓN DE GASTOS POR PERSONA ---
+            const expenseDistributionCanvas = document.getElementById('expenseDistributionChart');
+            if (expenseDistributionCanvas) {
+                const elizabethExpenses = {{ elizabeth_expenses_dop }};
+                const alejandrinaExpenses = {{ alejandrina_expenses_dop }};
+                const ownerExpenses = {{ owner_expenses_dop }};
+                
+                new Chart(expenseDistributionCanvas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Elizabeth (Empleada)', 'Alejandrina (Socia)', 'Propietarios'],
+                        datasets: [{
+                            data: [elizabethExpenses, alejandrinaExpenses, ownerExpenses],
+                            backgroundColor: [
+                                'rgba(220, 53, 69, 0.8)',   // Rojo para Elizabeth
+                                'rgba(255, 193, 7, 0.8)',   // Amarillo para Alejandrina
+                                'rgba(111, 66, 193, 0.8)'   // Morado para Propietarios
+                            ],
+                            borderColor: [
+                                'rgba(220, 53, 69, 1)',
+                                'rgba(255, 193, 7, 1)',
+                                'rgba(111, 66, 193, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.parsed;
+                                        const total = elizabethExpenses + alejandrinaExpenses + ownerExpenses;
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return context.label + ': DOP ' + value.toLocaleString('es-DO', {minimumFractionDigits: 2}) + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}

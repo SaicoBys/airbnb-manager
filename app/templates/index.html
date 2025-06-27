@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <!-- Alertas de Stock Bajo -->
+    {% if low_stock_supplies %}
+        <div class="dashboard-alert">
+            <h3>⚠️ Alertas de Suministros</h3>
+            <p>{{ low_stock_supplies|length }} suministro(s) requieren atención:</p>
+            <div class="alert-supplies">
+                {% for supply in low_stock_supplies[:5] %}
+                    <div class="supply-alert">
+                        <strong>{{ supply.name }}</strong> - 
+                        {% if supply.current_stock == 0 %}
+                            <span class="status-danger">AGOTADO</span>
+                        {% else %}
+                            <span class="status-warning">{{ supply.current_stock }} restantes</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% if low_stock_supplies|length > 5 %}
+                    <p>... y {{ low_stock_supplies|length - 5 }} más</p>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('main.supplies') }}" class="btn btn-warning">Ver Todos los Suministros</a>
+        </div>
+    {% endif %}
+
+    <div class="dashboard-section">
+        <h2><span style="font-size: 1.5em;">🏠</span> Dashboard de Habitaciones</h2>
+        {% if rooms %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre de la Habitación</th>
+                        <th>Estado</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in rooms %}
+                    <tr>
+                        <td>{{ room.id }}</td>
+                        <td>{{ room.name }}</td>
+                        <td>
+                            <form action="{{ url_for('main.update_room_status', room_id=room.id) }}" method="post">
+                                <select name="status">
+                                    <option value="Limpia" {% if room.status == 'Limpia' %}selected{% endif %}>Limpia</option>
+                                    <option value="Ocupada" {% if room.status == 'Ocupada' %}selected{% endif %}>Ocupada</option>
+                                    <option value="Pendiente de Limpieza" {% if room.status == 'Pendiente de Limpieza' %}selected{% endif %}>Pendiente de Limpieza</option>
+                                </select>
+                                <button type="submit">Actualizar</button>
+                            </form>
+                        </td>
+                        <td>{{ room.notes or 'Sin notas' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Aún no hay habitaciones registradas.</p>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-section">
+        <h2><span style="font-size: 1.5em;">📋</span> Mis Tareas Pendientes</h2>
+        {% if tasks %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Descripción de la Tarea</th>
+                        <th>Creada el</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr>
+                        <td>{{ task.description }}</td>
+                        <td>{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <form action="{{ url_for('main.complete_task', task_id=task.id) }}" method="post">
+                                <button type="submit" class="complete-btn">Completar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>¡No tienes tareas pendientes! 🎉</p>
+        {% endif %}
+    </div>
+
+    <style>
+        .dashboard-alert {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(255, 193, 7, 0.2);
+        }
+        .dashboard-alert h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .alert-supplies {
+            margin: 15px 0;
+        }
+        .supply-alert {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #ffc107;
+        }
+        .status-danger {
+            color: #721c24;
+            font-weight: bold;
+            background: #f8d7da;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .status-warning {
+            color: #856404;
+            font-weight: bold;
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+            border: 1px solid #ffc107;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+            border-color: #d39e00;
+            color: #212529;
+            text-decoration: none;
+        }
+    </style>
+{% endblock %}

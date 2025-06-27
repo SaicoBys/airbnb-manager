@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>
+        {% if supply %}
+            Editar Suministro: {{ supply.name }}
+        {% else %}
+            Añadir Nuevo Suministro
+        {% endif %}
+    </h1>
+    <hr>
+    
+    <div class="form-container">
+        <form action="" method="post" novalidate>
+            {{ form.hidden_tag() }}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.name.label }}<br>
+                    {{ form.name(class="form-control") }}
+                    {% if form.name.errors %}
+                        <div class="error-message">{{ form.name.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.category.label }}<br>
+                    {{ form.category(class="form-control") }}
+                    {% if form.category.errors %}
+                        <div class="error-message">{{ form.category.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.current_stock.label }}<br>
+                    {{ form.current_stock(class="form-control", min="0") }}
+                    {% if form.current_stock.errors %}
+                        <div class="error-message">{{ form.current_stock.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.minimum_stock.label }}<br>
+                    {{ form.minimum_stock(class="form-control", min="0") }}
+                    <small class="help-text">Cantidad mínima antes de alertar stock bajo</small>
+                    {% if form.minimum_stock.errors %}
+                        <div class="error-message">{{ form.minimum_stock.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.unit_price.label }}<br>
+                    {{ form.unit_price(class="form-control", step="0.01", min="0") }}
+                    <small class="help-text">Precio por unidad en DOP (opcional)</small>
+                    {% if form.unit_price.errors %}
+                        <div class="error-message">{{ form.unit_price.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.supplier.label }}<br>
+                    {{ form.supplier(class="form-control") }}
+                    <small class="help-text">Nombre del proveedor (opcional)</small>
+                    {% if form.supplier.errors %}
+                        <div class="error-message">{{ form.supplier.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                {{ form.notes.label }}<br>
+                {{ form.notes(class="form-control", rows="3") }}
+                <small class="help-text">Notas adicionales sobre el suministro (opcional)</small>
+                {% if form.notes.errors %}
+                    <div class="error-message">{{ form.notes.errors[0] }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('main.supplies') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+    <style>
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .help-text {
+            color: #6c757d;
+            font-size: 0.875em;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 5px;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}

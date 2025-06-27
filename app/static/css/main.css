@@ -1,0 +1,131 @@
+/* ==========================================================================
+   AIRBNB MANAGER - ESTILOS PRINCIPALES
+   Archivo principal que importa todos los módulos CSS
+   ========================================================================== */
+
+/* Importar módulos CSS en orden de prioridad */
+@import url('base.css');
+@import url('navbar.css');
+@import url('buttons.css');
+@import url('forms.css');
+@import url('tables.css');
+@import url('alerts.css');
+@import url('reports.css');
+@import url('dashboard.css');
+
+/* ==========================================================================
+   ESTILOS ESPECÍFICOS DE LA APLICACIÓN
+   ========================================================================== */
+
+/* Mejoras específicas que no están en los módulos */
+.highlight {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* Indicadores de estado */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-indicator.active { background: var(--success-color); }
+.status-indicator.inactive { background: var(--muted-color); }
+.status-indicator.warning { background: var(--warning-color); }
+.status-indicator.danger { background: var(--danger-color); }
+
+/* Overlays y modales básicos */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Loading states */
+.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Animaciones sutiles */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+/* Helpers de desarrollo (remover en producción) */
+.debug-grid {
+    background: linear-gradient(rgba(255,0,0,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,0,0,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn,
+    .form-actions {
+        display: none !important;
+    }
+    
+    .container {
+        max-width: none !important;
+        padding: 0 !important;
+    }
+    
+    .card,
+    .dashboard-section {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+}

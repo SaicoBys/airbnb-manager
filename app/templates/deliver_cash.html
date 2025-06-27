@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>💰 Entregar Caja - {{ closure.get_period_display() }}</h1>
+        <a href="{{ url_for('main.view_cash_closure', closure_id=closure.id) }}" class="btn btn-secondary">Volver a Detalles</a>
+    </div>
+
+    <!-- Información del cierre -->
+    <div class="closure-info">
+        <div class="info-card">
+            <h3>📊 Información del Cierre</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>Período:</strong> {{ closure.get_period_display() }}
+                </div>
+                <div class="info-item">
+                    <strong>Ingresos:</strong> <span class="money positive">DOP {{ "{:,.2f}".format(closure.total_income) }}</span>
+                </div>
+                <div class="info-item">
+                    <strong>Gastos:</strong> <span class="money negative">DOP {{ "{:,.2f}".format(closure.total_expenses) }}</span>
+                </div>
+                <div class="info-item expected-amount">
+                    <strong>Monto a Entregar:</strong> 
+                    <span class="money-large {% if closure.net_amount >= 0 %}positive{% else %}negative{% endif %}">
+                        DOP {{ "{:,.2f}".format(closure.net_amount) }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de entrega -->
+    <div class="delivery-form-container">
+        <form action="" method="post" novalidate class="delivery-form">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-header">
+                <h3>💵 Registro de Entrega</h3>
+                <p>Ingresa el monto exacto que está entregando la empleada</p>
+            </div>
+            
+            <div class="amount-section">
+                <div class="form-group">
+                    {{ form.delivered_amount.label }}
+                    <div class="amount-input-wrapper">
+                        <span class="currency-symbol">DOP</span>
+                        {{ form.delivered_amount(class="form-control amount-input", step="0.01", min="0", placeholder="0.00") }}
+                    </div>
+                    {% if form.delivered_amount.errors %}
+                        <div class="error-message">{{ form.delivered_amount.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="difference-calculator" id="differenceCalculator">
+                    <div class="calculator-row">
+                        <span>Monto Esperado:</span>
+                        <span class="expected-value">DOP {{ "{:,.2f}".format(closure.net_amount) }}</span>
+                    </div>
+                    <div class="calculator-row">
+                        <span>Monto Entregado:</span>
+                        <span class="delivered-value" id="deliveredValue">DOP 0.00</span>
+                    </div>
+                    <div class="calculator-row difference-row">
+                        <span>Diferencia:</span>
+                        <span class="difference-value" id="differenceValue">DOP 0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                {{ form.notes.label }}
+                {{ form.notes(class="form-control", rows="3", placeholder="Notas sobre la entrega (opcional)...") }}
+                {% if form.notes.errors %}
+                    <div class="error-message">{{ form.notes.errors[0] }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-actions">
+                {{ form.submit(class="btn btn-success btn-large") }}
+                <a href="{{ url_for('main.view_cash_closure', closure_id=closure.id) }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+    <style>
+        .closure-info {
+            margin-bottom: 30px;
+        }
+        
+        .info-card {
+            background: #e7f3ff;
+            border: 2px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 25px;
+        }
+        
+        .info-card h3 {
+            margin: 0 0 20px 0;
+            color: #004085;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+        
+        .info-item.expected-amount {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px solid #ffc107;
+        }
+        
+        .money {
+            font-weight: bold;
+        }
+        
+        .money.positive {
+            color: #28a745;
+        }
+        
+        .money.negative {
+            color: #dc3545;
+        }
+        
+        .money-large {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .delivery-form-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .delivery-form {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .form-header h3 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        
+        .form-header p {
+            color: #6c757d;
+            margin: 0;
+        }
+        
+        .amount-section {
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .amount-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .currency-symbol {
+            position: absolute;
+            left: 15px;
+            color: #6c757d;
+            font-weight: bold;
+            z-index: 1;
+        }
+        
+        .amount-input {
+            width: 100%;
+            padding: 15px 15px 15px 50px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: right;
+            transition: border-color 0.2s ease;
+        }
+        
+        .amount-input:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40,167,69,0.25);
+        }
+        
+        .difference-calculator {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .calculator-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .calculator-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .difference-row {
+            border-top: 2px solid #dee2e6;
+            padding-top: 10px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .expected-value {
+            color: #6c757d;
+            font-weight: bold;
+        }
+        
+        .delivered-value {
+            color: #495057;
+            font-weight: bold;
+        }
+        
+        .difference-value {
+            font-weight: bold;
+        }
+        
+        .difference-value.positive {
+            color: #856404;
+        }
+        
+        .difference-value.negative {
+            color: #dc3545;
+        }
+        
+        .difference-value.exact {
+            color: #28a745;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 1em;
+            transition: border-color 0.2s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40,167,69,0.25);
+        }
+        
+        .form-actions {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .btn-large {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                text-align: center;
+            }
+            
+            .form-actions .btn {
+                display: block;
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const amountInput = document.querySelector('.amount-input');
+            const deliveredValue = document.getElementById('deliveredValue');
+            const differenceValue = document.getElementById('differenceValue');
+            const expectedAmount = {{ closure.net_amount }};
+            
+            function updateCalculator() {
+                const deliveredAmount = parseFloat(amountInput.value) || 0;
+                const difference = deliveredAmount - expectedAmount;
+                
+                // Actualizar monto entregado
+                deliveredValue.textContent = `DOP ${deliveredAmount.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                
+                // Actualizar diferencia
+                let differenceText = '';
+                let differenceClass = '';
+                
+                if (difference === 0) {
+                    differenceText = 'Exacto';
+                    differenceClass = 'exact';
+                } else if (difference > 0) {
+                    differenceText = `+DOP ${difference.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    differenceClass = 'positive';
+                } else {
+                    differenceText = `DOP ${difference.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    differenceClass = 'negative';
+                }
+                
+                differenceValue.textContent = differenceText;
+                differenceValue.className = `difference-value ${differenceClass}`;
+            }
+            
+            amountInput.addEventListener('input', updateCalculator);
+            amountInput.addEventListener('change', updateCalculator);
+            
+            // Formatear el valor inicial
+            updateCalculator();
+        });
+    </script>
+{% endblock %}

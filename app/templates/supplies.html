@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>Gestión de Suministros</h1>
+        <a href="{{ url_for('main.add_supply') }}" class="btn btn-primary">Añadir Suministro</a>
+    </div>
+
+    <!-- Alertas de Stock Bajo -->
+    {% if low_stock_supplies %}
+        <div class="alert alert-warning">
+            <h3>⚠️ Alertas de Stock Bajo</h3>
+            <p>Los siguientes suministros tienen stock bajo o están agotados:</p>
+            <ul>
+                {% for supply in low_stock_supplies %}
+                <li>
+                    <strong>{{ supply.name }}</strong> - 
+                    Stock actual: {{ supply.current_stock }} 
+                    (Mínimo: {{ supply.minimum_stock }})
+                    <a href="{{ url_for('main.update_stock', supply_id=supply.id) }}" class="btn btn-sm btn-warning">Actualizar Stock</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <!-- Tabla de Suministros -->
+    {% if supplies %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Stock Actual</th>
+                    <th>Stock Mínimo</th>
+                    <th>Estado</th>
+                    <th>Precio Unitario</th>
+                    <th>Proveedor</th>
+                    <th>Última Actualización</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supply in supplies %}
+                <tr class="{% if supply.is_low_stock() %}low-stock-row{% endif %}">
+                    <td><strong>{{ supply.name }}</strong></td>
+                    <td>{{ supply.category }}</td>
+                    <td>{{ supply.current_stock }}</td>
+                    <td>{{ supply.minimum_stock }}</td>
+                    <td>
+                        <span class="status-badge {% if supply.current_stock == 0 %}status-danger{% elif supply.is_low_stock() %}status-warning{% else %}status-success{% endif %}">
+                            {{ supply.stock_status() }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if supply.unit_price %}
+                            DOP {{ "{:,.2f}".format(supply.unit_price) }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>{{ supply.supplier or 'N/A' }}</td>
+                    <td>{{ supply.last_updated.strftime('%d-%m-%Y %H:%M') if supply.last_updated else 'N/A' }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('main.update_stock', supply_id=supply.id) }}" class="btn btn-sm btn-primary">Stock</a>
+                            <a href="{{ url_for('main.edit_supply', supply_id=supply.id) }}" class="btn btn-sm btn-secondary">Editar</a>
+                            {% if current_user.can_delete_data() %}
+                                <form style="display: inline;" method="POST" action="{{ url_for('main.delete_supply', supply_id=supply.id) }}" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este suministro?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Aún no hay suministros registrados.</p>
+        <p><a href="{{ url_for('main.add_supply') }}" class="btn btn-primary">Añadir el primer suministro</a></p>
+    {% endif %}
+
+    <!-- Resumen por categoría -->
+    {% if supplies %}
+        <div class="dashboard-section" style="margin-top: 40px;">
+            <h2>Resumen por Categoría</h2>
+            <div class="category-summary">
+                {% set categories = supplies | groupby('category') %}
+                {% for category, category_supplies in categories %}
+                    <div class="category-card">
+                        <h3>{{ category }}</h3>
+                        <p>{{ category_supplies | list | length }} suministros</p>
+                        <p>{{ category_supplies | selectattr('is_low_stock') | list | length }} con stock bajo</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    
+    <style>
+        .low-stock-row {
+            background-color: #fff3cd;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-success { background-color: #d1edff; color: #0c5460; }
+        .status-warning { background-color: #fff3cd; color: #856404; }
+        .status-danger { background-color: #f8d7da; color: #721c24; }
+        .action-buttons { display: flex; gap: 5px; }
+        .category-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .category-card { background: #f8f9fa; padding: 15px; border-radius: 8px; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .alert-warning { background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+    </style>
+{% endblock %}

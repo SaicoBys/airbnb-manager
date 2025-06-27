@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>Reporte de Cierre de Mes: {{ report_month }}</h1>
+    </div>
+
+    <!-- Sección de Resumen Financiero -->
+    <div class="report-summary">
+        <div class="summary-card">
+            <h2>Ingresos Totales</h2>
+            <p class="amount success">DOP {{ "{:,.2f}".format(total_income_dop) }}</p>
+            <p class="sub-amount">USD ${{ "{:,.2f}".format(total_income_usd) }}</p>
+        </div>
+        <div class="summary-card">
+            <h2>Gastos de Empleada</h2>
+            <p class="amount danger">DOP {{ "{:,.2f}".format(total_expenses_dop) }}</p>
+            <p class="sub-amount">Afectan el cuadre de caja</p>
+        </div>
+        <div class="summary-card">
+            <h2>Beneficio Neto</h2>
+            <p class="amount info {% if profit_dop < 0 %}danger{% endif %}">DOP {{ "{:,.2f}".format(profit_dop) }}</p>
+            <p class="sub-amount">USD ${{ "{:,.2f}".format(profit_usd) }}</p>
+        </div>
+    </div>
+
+    <!-- Nueva sección: Desglose de Gastos -->
+    <div class="expenses-breakdown">
+        <h2>📋 Desglose de Gastos - {{ report_month }}</h2>
+        <div class="breakdown-summary">
+            <div class="breakdown-card employee-expenses">
+                <h3>👩‍💼 Gastos de Empleada</h3>
+                <div class="breakdown-amount">DOP {{ "{:,.2f}".format(total_expenses_dop) }}</div>
+                <div class="breakdown-count">{{ employee_expenses|length }} gastos</div>
+                <p><strong>Estos gastos SÍ afectan el cuadre de caja</strong></p>
+            </div>
+            
+            <div class="breakdown-card owner-expenses">
+                <h3>👩‍💼 Gastos de Propietarios</h3>
+                {% set owner_expenses = expenses | rejectattr('affects_cash_closure') | list %}
+                <div class="breakdown-amount">DOP {{ "{:,.2f}".format(total_all_expenses_dop - total_expenses_dop) }}</div>
+                <div class="breakdown-count">{{ owner_expenses|length }} gastos</div>
+                <p><strong>Estos gastos NO afectan el cuadre de caja</strong></p>
+            </div>
+            
+            <div class="breakdown-card total-expenses">
+                <h3>📊 Total General</h3>
+                <div class="breakdown-amount">DOP {{ "{:,.2f}".format(total_all_expenses_dop) }}</div>
+                <div class="breakdown-count">{{ expenses|length }} gastos</div>
+                <p>Suma de todos los gastos del mes</p>
+            </div>
+        </div>
+        
+        <div class="explanation-box">
+            <h4>ℹ️ ¿Por qué esta distinción?</h4>
+            <ul>
+                <li><strong>Gastos de Empleada:</strong> Cualquier gasto pagado por la empleada (efectivo, tarjeta, etc.) reduce el monto que debe entregar, porque sale de su responsabilidad.</li>
+                <li><strong>Gastos de Propietarios:</strong> Gastos pagados por Alejandrina u otros propietarios con SU PROPIO dinero, NO afectan el cuadre de la empleada.</li>
+                <li><strong>Cuadre de Caja:</strong> Solo considera ingresos menos gastos pagados por la empleada para determinar cuánto dinero debe entregar.</li>
+                <li><strong>Ejemplo:</strong> Si Alejandrina paga DOP 5,000 en efectivo con SU dinero, esto NO se descuenta de lo que entrega la empleada.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Sección especial para empleadas: Cuadre de Caja -->
+    {% if current_user.is_employee() %}
+        <div class="cash-reconciliation">
+            <h2>💰 Cuadre de Caja - {{ report_month }}</h2>
+            <div class="cash-summary">
+                <div class="cash-item total-income">
+                    <h3>Total Ingresos del Mes</h3>
+                    <div class="cash-amount positive">DOP {{ "{:,.2f}".format(total_income_dop) }}</div>
+                    <p>Dinero que ingresó este mes</p>
+                </div>
+                <div class="cash-item total-expenses">
+                    <h3>Total Gastos del Mes</h3>
+                    <div class="cash-amount negative">DOP {{ "{:,.2f}".format(total_expenses_dop) }}</div>
+                    <p>Dinero gastado este mes</p>
+                </div>
+                <div class="cash-item net-amount">
+                    <h3>🎯 DINERO A ENTREGAR</h3>
+                    <div class="cash-amount delivery {% if profit_dop > 0 %}positive{% else %}zero{% endif %}">
+                        DOP {{ "{:,.2f}".format(profit_dop if profit_dop > 0 else 0) }}
+                    </div>
+                    {% if profit_dop > 0 %}
+                        <p><strong>Este es el monto que debes entregar</strong></p>
+                    {% elif profit_dop == 0 %}
+                        <p>No hay dinero para entregar este mes</p>
+                    {% else %}
+                        <p>Déficit del mes: DOP {{ "{:,.2f}".format(abs(profit_dop)) }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Instrucciones para la empleada -->
+            <div class="instructions">
+                <h4>📋 Instrucciones de Entrega</h4>
+                <ol>
+                    <li>Verifica que el dinero en efectivo coincida con el monto mostrado arriba</li>
+                    <li>Revisa que todos los pagos del mes estén registrados en el sistema</li>
+                    <li>Confirma que todos los gastos estén documentados</li>
+                    <li>Entrega el dinero exacto mostrado en "DINERO A ENTREGAR"</li>
+                </ol>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Sección de Desglose -->
+    <div class="details-grid">
+        <!-- Desglose de Ingresos -->
+        <div class="details-section">
+            <h2>Desglose de Ingresos</h2>
+            {% if incomes %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Monto (DOP)</th>
+                            <th>Método</th>
+                            <th>Estancia (Cliente/Habitación)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for income in incomes %}
+                        <tr>
+                            <td>{{ income.payment_date.strftime('%d-%m-%Y') }}</td>
+                            <td>{{ "{:,.2f}".format(income.amount) }}</td>
+                            <td>{{ income.method }}</td>
+                            <td>{{ income.stay.client.full_name }} / {{ income.stay.room.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No hay ingresos registrados para este mes.</p>
+            {% endif %}
+        </div>
+
+        <!-- Desglose de Gastos -->
+        <div class="details-section">
+            <h2>Desglose de Gastos</h2>
+            {% if expenses %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Monto (DOP)</th>
+                            <th>Categoría</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in expenses %}
+                        <tr>
+                            <td>{{ expense.expense_date.strftime('%d-%m-%Y') }}</td>
+                            <td>{{ "{:,.2f}".format(expense.amount) }}</td>
+                            <td>{{ expense.category }}</td>
+                            <td>{{ expense.description }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No hay gastos registrados para este mes.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <style>
+        /* Estilos para desglose de gastos */
+        .expenses-breakdown {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 30px 0;
+        }
+        
+        .expenses-breakdown h2 {
+            margin-top: 0;
+            color: #495057;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        .breakdown-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .breakdown-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid;
+        }
+        
+        .breakdown-card.employee-expenses {
+            border-left-color: #dc3545;
+        }
+        
+        .breakdown-card.owner-expenses {
+            border-left-color: #28a745;
+        }
+        
+        .breakdown-card.total-expenses {
+            border-left-color: #007bff;
+        }
+        
+        .breakdown-card h3 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 1em;
+        }
+        
+        .breakdown-amount {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        
+        .breakdown-count {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .breakdown-card p {
+            margin: 0;
+            font-size: 0.85em;
+            color: #495057;
+        }
+        
+        .explanation-box {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #b3d9ff;
+        }
+        
+        .explanation-box h4 {
+            margin-top: 0;
+            color: #004085;
+        }
+        
+        .explanation-box ul {
+            margin: 15px 0 0 0;
+            padding-left: 20px;
+        }
+        
+        .explanation-box li {
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        
+        /* Estilos para cuadre de caja de empleadas */
+        .cash-reconciliation {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .cash-reconciliation h2 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        
+        .cash-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .cash-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+        
+        .cash-item.net-amount {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.2);
+        }
+        
+        .cash-item h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+        }
+        
+        .cash-amount {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .cash-amount.positive { color: #4CAF50; }
+        .cash-amount.negative { color: #f8d7da; }
+        .cash-amount.delivery { 
+            color: #ffd700; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 2.5em;
+        }
+        .cash-amount.zero { color: #95a5a6; }
+        
+        .cash-item p {
+            margin: 10px 0 0 0;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffd700;
+        }
+        
+        .instructions h4 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        
+        .instructions ol {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 768px) {
+            .cash-summary {
+                grid-template-columns: 1fr;
+            }
+            
+            .cash-amount {
+                font-size: 1.5em;
+            }
+            
+            .cash-amount.delivery {
+                font-size: 2em;
+            }
+        }
+    </style>
+{% endblock %}

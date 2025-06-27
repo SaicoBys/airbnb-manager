@@ -1,0 +1,292 @@
+/* ==========================================================================
+   TABLAS - Airbnb Manager
+   ========================================================================== */
+
+/* Tablas Base */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    box-shadow: var(--box-shadow);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+table.borderless {
+    box-shadow: none;
+    border-radius: 0;
+}
+
+/* Encabezados */
+th {
+    background-color: #f8f9fa;
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid var(--border-color);
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+th.center { text-align: center; }
+th.right { text-align: right; }
+
+/* Celdas */
+td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #f1f1f1;
+    vertical-align: middle;
+}
+
+td.center { text-align: center; }
+td.right { text-align: right; }
+
+/* Filas */
+tbody tr {
+    transition: background-color var(--transition);
+}
+
+tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Tablas con rayas alternadas */
+.table-striped tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.table-striped tbody tr:nth-child(even):hover {
+    background-color: #f0f0f0;
+}
+
+/* Tablas específicas del dominio */
+
+/* Tabla de Gastos */
+.expenses-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+}
+
+.expenses-table th {
+    background: #f8f9fa;
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.expenses-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.expense-row.employee-expense {
+    background: #fef2f2;
+    border-left: 3px solid var(--danger-color);
+}
+
+.expense-row.owner-expense {
+    background: #f0f9f0;
+    border-left: 3px solid var(--success-color);
+}
+
+/* Tabla de Clientes */
+.clients-ranking {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.clients-ranking th {
+    background: #f8f9fa;
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.clients-ranking td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Elementos especiales dentro de tablas */
+.money-cell {
+    text-align: right;
+}
+
+.money-amount {
+    font-weight: bold;
+    color: #495057;
+    font-family: 'Courier New', monospace;
+}
+
+.phone-number {
+    font-family: monospace;
+    color: var(--muted-color);
+}
+
+.visit-count {
+    text-align: center;
+}
+
+.visit-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.paid-by {
+    text-align: center;
+}
+
+.cash-impact {
+    text-align: center;
+}
+
+.payment-method {
+    text-align: center;
+}
+
+/* Badges dentro de tablas */
+.category-badge {
+    background: #e9ecef;
+    color: #495057;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+.impact-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.impact-badge.affects {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid var(--warning-color);
+}
+
+.impact-badge.no-affect {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid var(--success-color);
+}
+
+/* Estados de stock */
+.stock-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.stock-status.normal {
+    background: #d4edda;
+    color: #155724;
+}
+
+.stock-status.low {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.stock-status.out {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Tablas responsivas */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+    table {
+        font-size: 0.9em;
+    }
+    
+    th,
+    td {
+        padding: 8px 4px;
+    }
+    
+    .expenses-table th,
+    .expenses-table td {
+        padding: 8px 4px;
+    }
+    
+    /* Stack para móviles */
+    .table-stack {
+        display: block;
+    }
+    
+    .table-stack thead {
+        display: none;
+    }
+    
+    .table-stack tbody,
+    .table-stack tr,
+    .table-stack td {
+        display: block;
+        width: 100%;
+    }
+    
+    .table-stack tr {
+        border: 1px solid var(--border-color);
+        margin-bottom: 10px;
+        border-radius: 8px;
+        padding: 10px;
+        background: white;
+    }
+    
+    .table-stack td {
+        border: none;
+        padding: 5px 0;
+        text-align: left !important;
+    }
+    
+    .table-stack td:before {
+        content: attr(data-label) ": ";
+        font-weight: bold;
+        color: var(--muted-color);
+    }
+}
+
+/* Tablas con scroll horizontal para móviles */
+@media (max-width: 480px) {
+    .table-responsive {
+        font-size: 0.8em;
+    }
+    
+    .money-amount {
+        font-size: 0.9em;
+    }
+    
+    .category-badge,
+    .impact-badge,
+    .visit-badge {
+        font-size: 0.7em;
+        padding: 2px 6px;
+    }
+}

@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>💰 Gestión de Cierres de Caja</h1>
+        {% if current_user.can_manage_finances() %}
+            <a href="{{ url_for('main.create_cash_closure') }}" class="btn btn-primary">Crear Nuevo Cierre</a>
+        {% endif %}
+    </div>
+
+    <!-- Alertas de cierres pendientes -->
+    {% if overdue_closures %}
+        <div class="flash danger">
+            <strong>⚠️ Cierres Vencidos:</strong> 
+            {{ overdue_closures|length }} cierre(s) con entrega atrasada.
+        </div>
+    {% endif %}
+    
+    {% if pending_closures %}
+        <div class="flash info">
+            <strong>📋 Cierres Pendientes:</strong> 
+            {{ pending_closures|length }} cierre(s) esperando entrega.
+        </div>
+    {% endif %}
+
+    <!-- Resumen rápido -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <h3>Total de Cierres</h3>
+            <div class="amount">{{ closures|length }}</div>
+        </div>
+        <div class="summary-card">
+            <h3>Pendientes de Entrega</h3>
+            <div class="amount {% if pending_closures %}danger{% else %}success{% endif %}">
+                {{ pending_closures|length }}
+            </div>
+        </div>
+        <div class="summary-card">
+            <h3>Vencidos</h3>
+            <div class="amount {% if overdue_closures %}danger{% else %}success{% endif %}">
+                {{ overdue_closures|length }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de cierres -->
+    {% if closures %}
+        <table class="closures-table">
+            <thead>
+                <tr>
+                    <th>Período</th>
+                    <th>Ingresos</th>
+                    <th>Gastos</th>
+                    <th>Monto Neto</th>
+                    <th>Estado</th>
+                    <th>Fecha Límite</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for closure in closures %}
+                <tr class="closure-row {% if closure.is_overdue() %}overdue{% elif not closure.is_delivered %}pending{% else %}delivered{% endif %}">
+                    <td>
+                        <strong>{{ closure.get_period_display() }}</strong>
+                        <br><small class="text-muted">Creado: {{ closure.closure_date.strftime('%d-%m-%Y') }}</small>
+                    </td>
+                    <td class="money-cell">
+                        <span class="money-amount positive">DOP {{ "{:,.2f}".format(closure.total_income) }}</span>
+                    </td>
+                    <td class="money-cell">
+                        <span class="money-amount negative">DOP {{ "{:,.2f}".format(closure.total_expenses) }}</span>
+                    </td>
+                    <td class="money-cell">
+                        <span class="money-amount {% if closure.net_amount >= 0 %}positive{% else %}negative{% endif %}">
+                            DOP {{ "{:,.2f}".format(closure.net_amount) }}
+                        </span>
+                    </td>
+                    <td class="status-cell">
+                        {% if closure.is_delivered %}
+                            <span class="status-badge delivered">✅ Entregado</span>
+                            {% if closure.delivered_date %}
+                                <br><small class="text-muted">{{ closure.delivered_date.strftime('%d-%m-%Y') }}</small>
+                            {% endif %}
+                        {% elif closure.is_overdue() %}
+                            <span class="status-badge overdue">🔴 Vencido</span>
+                        {% else %}
+                            <span class="status-badge pending">⏳ Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set next_month = closure.month + 1 if closure.month < 12 else 1 %}
+                        {% set next_year = closure.year if closure.month < 12 else closure.year + 1 %}
+                        <small class="text-muted">{{ "05-%02d-%04d"|format(next_month, next_year) }}</small>
+                    </td>
+                    <td class="actions-cell">
+                        <a href="{{ url_for('main.view_cash_closure', closure_id=closure.id) }}" class="btn btn-primary btn-sm">Ver Detalles</a>
+                        {% if not closure.is_delivered %}
+                            <a href="{{ url_for('main.deliver_cash', closure_id=closure.id) }}" class="btn btn-success btn-sm">Entregar</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <h3>📊 No hay cierres de caja registrados</h3>
+            <p>Los cierres de caja se crean automáticamente cada mes o puedes crear uno manualmente.</p>
+            {% if current_user.can_manage_finances() %}
+                <a href="{{ url_for('main.create_cash_closure') }}" class="btn btn-primary">Crear Primer Cierre</a>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <style>
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .summary-card h3 {
+            margin: 0 0 10px 0;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .summary-card .amount {
+            font-size: 2em;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .summary-card .amount.success {
+            color: #28a745;
+        }
+        
+        .summary-card .amount.danger {
+            color: #dc3545;
+        }
+        
+        .closures-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .closures-table th {
+            background: #f8f9fa;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .closures-table td {
+            padding: 15px 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .closure-row.pending {
+            background: #fff3cd;
+        }
+        
+        .closure-row.overdue {
+            background: #f8d7da;
+        }
+        
+        .closure-row.delivered {
+            background: #d4edda;
+        }
+        
+        .money-cell {
+            text-align: right;
+        }
+        
+        .money-amount {
+            font-weight: bold;
+        }
+        
+        .money-amount.positive {
+            color: #28a745;
+        }
+        
+        .money-amount.negative {
+            color: #dc3545;
+        }
+        
+        .status-cell {
+            text-align: center;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .status-badge.delivered {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-badge.overdue {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .actions-cell {
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.8em;
+            margin: 2px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .empty-state h3 {
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .text-muted {
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+    </style>
+{% endblock %}

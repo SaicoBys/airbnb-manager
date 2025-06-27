@@ -1,0 +1,152 @@
+/* ==========================================================================
+   NAVEGACIÓN - Airbnb Manager
+   ========================================================================== */
+
+.navbar {
+    background-color: #fff;
+    padding: 0 40px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.navbar .brand a {
+    font-weight: bold;
+    font-size: 1.5em;
+    text-decoration: none;
+    color: var(--dark-color);
+    transition: color var(--transition);
+}
+
+.navbar .brand a:hover {
+    color: var(--primary-color);
+}
+
+.navbar .nav-links {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.navbar .nav-links a {
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #495057;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all var(--transition);
+    white-space: nowrap;
+}
+
+.navbar .nav-links a:hover {
+    background-color: #e9ecef;
+    transform: translateY(-1px);
+}
+
+.navbar .user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.navbar .user-info span {
+    color: var(--dark-color);
+    font-size: 0.9em;
+}
+
+.navbar .user-info a {
+    text-decoration: none;
+    color: var(--danger-color);
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: all var(--transition);
+}
+
+.navbar .user-info a:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Estilos para roles de usuario */
+.user-role {
+    color: var(--muted-color);
+    font-weight: normal;
+    font-size: 0.8em;
+}
+
+/* Estilo destacado para navegación */
+.nav-highlight {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border-radius: 4px !important;
+    padding: 6px 12px !important;
+    font-weight: bold !important;
+}
+
+.nav-highlight:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Responsive Navigation */
+@media (max-width: 1024px) {
+    .navbar {
+        padding: 0 20px;
+    }
+    
+    .navbar .nav-links {
+        gap: 2px;
+    }
+    
+    .navbar .nav-links a {
+        padding: 8px 10px;
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        height: auto;
+        padding: 15px 20px;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .navbar .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .navbar .nav-links a {
+        padding: 8px 12px;
+        font-size: 0.85em;
+    }
+    
+    .navbar .user-info {
+        order: -1;
+        width: 100%;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar .nav-links {
+        grid-template-columns: repeat(2, 1fr);
+        display: grid;
+        width: 100%;
+        gap: 8px;
+    }
+    
+    .navbar .nav-links a {
+        text-align: center;
+    }
+}

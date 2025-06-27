@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>💸 Añadir Nuevo Gasto</h1>
+        <a href="{{ url_for('main.expenses') }}" class="btn btn-secondary">Volver a Gastos</a>
+    </div>
+
+    <div class="form-container" style="max-width: 800px; margin: 0 auto;">
+        <div class="form-info">
+            <h3>ℹ️ Control de Cuadre de Caja</h3>
+            <ul>
+                <li><strong>👩‍💼 Si paga la EMPLEADA:</strong> Cualquier método (efectivo, tarjeta, etc.) afecta su cuadre de caja</li>
+                <li><strong>👩‍💼 Si paga ALEJANDRINA:</strong> Aunque sea efectivo, NO afecta el cuadre de la empleada</li>
+                <li><strong>🎯 Regla:</strong> Solo los gastos pagados por la empleada se descuentan del dinero que debe entregar</li>
+            </ul>
+        </div>
+
+        <form action="" method="post" novalidate class="form-container">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.description.label }}
+                    {{ form.description(size=40, class="form-control", placeholder="Describe el gasto...") }}
+                    {% if form.description.errors %}
+                        <div class="error-message">{{ form.description.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.amount.label }}
+                    <div class="amount-input-wrapper">
+                        <span class="currency-symbol">DOP</span>
+                        {{ form.amount(class="form-control amount-input", step="0.01", min="0.01", placeholder="0.00") }}
+                    </div>
+                    {% if form.amount.errors %}
+                        <div class="error-message">{{ form.amount.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.category.label }}
+                    {{ form.category(class="form-control") }}
+                    {% if form.category.errors %}
+                        <div class="error-message">{{ form.category.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.payment_method.label }}
+                    {{ form.payment_method(class="form-control", id="paymentMethod") }}
+                    {% if form.payment_method.errors %}
+                        <div class="error-message">{{ form.payment_method.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.paid_by.label }}
+                {{ form.paid_by(class="form-control") }}
+                {% if form.paid_by.errors %}
+                    <div class="error-message">{{ form.paid_by.errors[0] }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Indicador de impacto en caja -->
+            <div class="form-indicator" id="cashImpact">
+                <div class="indicator-card warning">
+                    <h4>💵 Afecta el Cuadre de Caja</h4>
+                    <p>Este gasto se restará del dinero que debe entregar la empleada.</p>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                {{ form.submit(class="btn btn-primary btn-large") }}
+                <a href="{{ url_for('main.expenses') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const paidBySelect = document.querySelector('#paid_by');
+            const cashImpact = document.getElementById('cashImpact');
+            
+            function updateCashImpact() {
+                const paidByValue = paidBySelect.value;
+                const paidByText = paidBySelect.options[paidBySelect.selectedIndex].text;
+                const impactCard = cashImpact.querySelector('.indicator-card');
+                
+                // Verificar si es empleada (asumiendo que el texto contiene indicadores)
+                // En producción, esto se haría con una consulta al servidor
+                const isEmployee = paidByText.toLowerCase().includes('empleada') || 
+                                   paidByText.toLowerCase().includes('employee');
+                
+                if (isEmployee) {
+                    impactCard.className = 'indicator-card warning';
+                    impactCard.innerHTML = `
+                        <h4>⚠️ Afecta el Cuadre de Caja</h4>
+                        <p>Este gasto se restará del dinero que debe entregar la empleada.</p>
+                    `;
+                } else {
+                    impactCard.className = 'indicator-card success';
+                    impactCard.innerHTML = `
+                        <h4>✅ NO Afecta el Cuadre de Caja</h4>
+                        <p>Gasto pagado por ${paidByText}, no afecta el cuadre de la empleada.</p>
+                    `;
+                }
+            }
+            
+            paidBySelect.addEventListener('change', updateCashImpact);
+            updateCashImpact(); // Inicializar
+        });
+    </script>
+{% endblock %}

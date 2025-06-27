@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>📊 Crear Nuevo Cierre de Caja</h1>
+        <a href="{{ url_for('main.cash_closures') }}" class="btn btn-secondary">Volver a Cierres</a>
+    </div>
+
+    <div class="form-container">
+        <div class="form-info">
+            <h3>ℹ️ Información del Cierre</h3>
+            <p>El cierre de caja calculará automáticamente:</p>
+            <ul>
+                <li><strong>Ingresos:</strong> Todos los pagos recibidos en el mes seleccionado</li>
+                <li><strong>Gastos:</strong> Todos los gastos registrados en el mes seleccionado</li>
+                <li><strong>Monto Neto:</strong> La diferencia entre ingresos y gastos</li>
+            </ul>
+            <p><strong>Nota:</strong> Una vez creado el cierre, la empleada tendrá hasta el día 5 del mes siguiente para entregar el dinero.</p>
+        </div>
+
+        <form action="" method="post" novalidate class="closure-form">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.month.label }}
+                    {{ form.month(class="form-control") }}
+                    {% if form.month.errors %}
+                        <div class="error-message">{{ form.month.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.year.label }}
+                    {{ form.year(class="form-control", value="2024") }}
+                    {% if form.year.errors %}
+                        <div class="error-message">{{ form.year.errors[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                {{ form.notes.label }}
+                {{ form.notes(class="form-control", rows="3", placeholder="Notas adicionales sobre este cierre...") }}
+                {% if form.notes.errors %}
+                    <div class="error-message">{{ form.notes.errors[0] }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-actions">
+                {{ form.submit(class="btn btn-primary btn-large") }}
+                <a href="{{ url_for('main.cash_closures') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+    <style>
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .form-info {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .form-info h3 {
+            margin-top: 0;
+            color: #004085;
+        }
+        
+        .form-info ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        
+        .form-info li {
+            margin-bottom: 8px;
+        }
+        
+        .closure-form {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 1em;
+            transition: border-color 0.2s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.25);
+        }
+        
+        .form-actions {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            margin-top: 30px;
+        }
+        
+        .btn-large {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}

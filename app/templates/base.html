@@ -7,20 +7,28 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="brand"><a href="{{ url_for('main.index') }}">Gestor Airbnb</a></div>
+        <div class="brand"><a href="{{ url_for('panel.index') }}">Gestor Airbnb</a></div>
         {% if current_user.is_authenticated %}
             <div class="nav-links">
-                <a href="{{ url_for('main.index') }}">Panel Principal</a>
-                <a href="{{ url_for('main.clients') }}">Clientes</a>
-                <a href="{{ url_for('main.expenses') }}">Gastos</a>
-                <a href="{{ url_for('main.stays') }}">Estancias</a>
-                <a href="{{ url_for('main.supplies') }}">Suministros</a>
+                <a href="{{ url_for('panel.index') }}" class="nav-primary">🏠 Panel</a>
                 {% if current_user.can_view_reports() %}
-                    <a href="{{ url_for('main.reports') }}">Reportes</a>
+                    <a href="{{ url_for('panel.reports') }}">📊 Reportes</a>
                 {% endif %}
-                {% if current_user.can_view_monthly_report() %}
-                    <a href="{{ url_for('main.monthly_report') }}">Cierre de Mes</a>
+                {% if current_user.can_manage_finances() %}
+                    <a href="{{ url_for('main.cash_closures') }}">💰 Cierres</a>
                 {% endif %}
+                <div class="nav-dropdown">
+                    <span class="nav-dropdown-toggle">⚙️ Más</span>
+                    <div class="nav-dropdown-menu">
+                        <a href="{{ url_for('supply_packages.index') }}">🎁 Paquetes</a>
+                        {% if current_user.can_manage_supplies() %}
+                            <a href="{{ url_for('main.supplies') }}">📦 Inventario</a>
+                        {% endif %}
+                        {% if current_user.can_view_monthly_report() %}
+                            <a href="{{ url_for('panel.monthly_report') }}">📅 Cierre Mensual</a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             <div class="user-info">
                 <span>Hola, <strong>{{ current_user.get_display_name() }}</strong>
@@ -28,7 +36,7 @@
                         <small class="user-role">({{ current_user.get_role_display() }})</small>
                     {% endif %}
                 </span>
-                <a href="{{ url_for('main.logout') }}">Cerrar Sesión</a>
+                <a href="{{ url_for('auth.logout') }}">Cerrar Sesión</a>
             </div>
         {% endif %}
     </nav>

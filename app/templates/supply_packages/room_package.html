@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_widget, render_button, render_data_table, render_badge, render_alert, render_form_field %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/macros.css') }}">
+<style>
+.package-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.package-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.summary-card {
+    background: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.summary-number {
+    font-size: 1.5em;
+    font-weight: bold;
+    display: block;
+}
+
+.add-item-form {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.package-items-table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.item-row {
+    transition: background-color 0.2s ease;
+}
+
+.item-row:hover {
+    background-color: #f8f9fa;
+}
+
+.usage-type-badge {
+    font-size: 0.8em;
+}
+
+.edit-form {
+    display: none;
+    background: #fff3cd;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+}
+
+.cost-highlight {
+    font-weight: bold;
+    color: #28a745;
+}
+
+.mandatory-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.mandatory-true {
+    background-color: #dc3545;
+}
+
+.mandatory-false {
+    background-color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('supply_packages.index') }}">📦 Paquetes de Suministros</a>
+            </li>
+            <li class="breadcrumb-item active">{{ room.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header del paquete -->
+    <div class="package-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1>🏨 {{ room.name }}</h1>
+                <p class="mb-0">{{ room.get_tier_display() }}</p>
+                {% if room.notes %}
+                <small class="opacity-75">{{ room.notes }}</small>
+                {% endif %}
+            </div>
+            <div class="text-end">
+                {{ render_button('🔙 Volver', onclick="window.location.href='" + url_for('supply_packages.index') + "'", class='btn btn-light btn-sm') }}
+            </div>
+        </div>
+
+        {% if package_summary %}
+        <div class="package-summary">
+            <div class="summary-card">
+                <span class="summary-number">{{ package_summary.total_items }}</span>
+                <span>Total Items</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-number">{{ package_summary.mandatory_items }}</span>
+                <span>Obligatorios</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-number">{{ package_summary.optional_items }}</span>
+                <span>Opcionales</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-number cost-highlight">DOP {{ "{:,.2f}".format(package_summary.total_cost) }}</span>
+                <span>Costo Total</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center mt-3">
+            <p class="mb-0 opacity-75">Esta habitación no tiene paquete configurado</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Formulario para agregar item -->
+    <div class="add-item-form">
+        <h5>➕ Agregar Suministro al Paquete</h5>
+        <form id="addItemForm">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Suministro</label>
+                    <select id="supplySelect" class="form-select" required>
+                        <option value="">Seleccionar suministro...</option>
+                        {% for supply in available_supplies %}
+                        <option value="{{ supply.id }}" 
+                                data-category="{{ supply.category }}" 
+                                data-price="{{ supply.unit_price or 0 }}"
+                                data-stock="{{ supply.current_stock }}">
+                            {{ supply.name }} ({{ supply.category }}) - Stock: {{ supply.current_stock }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Cantidad</label>
+                    <input type="number" id="quantityInput" class="form-control" value="1" min="1" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Tipo</label>
+                    <select id="usageTypeSelect" class="form-select">
+                        <option value="Automático">🤖 Automático</option>
+                        <option value="Opcional">🔄 Opcional</option>
+                        <option value="Bajo demanda">📞 Bajo demanda</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Obligatorio</label>
+                    <select id="mandatorySelect" class="form-select">
+                        <option value="true">Sí</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-success d-block w-100">➕ Agregar</button>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-12">
+                    <label class="form-label">Notas (opcional)</label>
+                    <input type="text" id="notesInput" class="form-control" placeholder="Notas adicionales...">
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de items del paquete -->
+    <div class="package-items-table">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th width="5%"></th>
+                        <th width="30%">Suministro</th>
+                        <th width="10%">Cantidad</th>
+                        <th width="15%">Tipo de Uso</th>
+                        <th width="10%">Obligatorio</th>
+                        <th width="10%">Costo</th>
+                        <th width="20%">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="packageItemsTable">
+                    {% if package_items %}
+                    {% for item in package_items %}
+                    <tr class="item-row" data-item-id="{{ item.id }}">
+                        <td>
+                            <span class="mandatory-indicator {{ 'mandatory-true' if item.is_mandatory else 'mandatory-false' }}" 
+                                  title="{{ 'Obligatorio' if item.is_mandatory else 'Opcional' }}"></span>
+                        </td>
+                        <td>
+                            <strong>{{ item.supply.name }}</strong>
+                            <br><small class="text-muted">{{ item.supply.category }}</small>
+                            {% if item.notes %}
+                            <br><small class="text-info">💭 {{ item.notes }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="quantity-display">{{ item.quantity }}</span>
+                            <input type="number" class="form-control form-control-sm quantity-edit d-none" 
+                                   value="{{ item.quantity }}" min="1">
+                        </td>
+                        <td>
+                            <span class="usage-type-display">
+                                {{ render_badge(item.get_usage_type_display(), 'info', 'usage-type-badge') }}
+                            </span>
+                            <select class="form-select form-select-sm usage-type-edit d-none">
+                                <option value="Automático" {{ 'selected' if item.usage_type == 'Automático' }}>🤖 Automático</option>
+                                <option value="Opcional" {{ 'selected' if item.usage_type == 'Opcional' }}>🔄 Opcional</option>
+                                <option value="Bajo demanda" {{ 'selected' if item.usage_type == 'Bajo demanda' }}>📞 Bajo demanda</option>
+                            </select>
+                        </td>
+                        <td>
+                            <span class="mandatory-display">
+                                {{ '✅ Sí' if item.is_mandatory else '⭕ No' }}
+                            </span>
+                            <select class="form-select form-select-sm mandatory-edit d-none">
+                                <option value="true" {{ 'selected' if item.is_mandatory }}>✅ Sí</option>
+                                <option value="false" {{ 'selected' if not item.is_mandatory }}>⭕ No</option>
+                            </select>
+                        </td>
+                        <td>
+                            <span class="cost-display cost-highlight">
+                                DOP {{ "{:,.2f}".format(item.calculate_total_cost()) }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-primary btn-sm edit-btn" 
+                                        onclick="editItem({{ item.id }})" title="Editar">✏️</button>
+                                <button class="btn btn-outline-success btn-sm save-btn d-none" 
+                                        onclick="saveItem({{ item.id }})" title="Guardar">💾</button>
+                                <button class="btn btn-outline-secondary btn-sm cancel-btn d-none" 
+                                        onclick="cancelEdit({{ item.id }})" title="Cancelar">❌</button>
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        onclick="removeItem({{ item.id }})" title="Eliminar">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr id="emptyState">
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <p class="mb-0">No hay suministros en este paquete</p>
+                            <small>Usa el formulario de arriba para agregar suministros</small>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Acciones del paquete -->
+    {% if package_items %}
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <h6>🔗 Acciones del Paquete</h6>
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-info" onclick="copyPackageToOther()">📋 Copiar a otra habitación</button>
+                <button class="btn btn-outline-warning" onclick="exportPackage()">📄 Exportar paquete</button>
+                <button class="btn btn-outline-danger" onclick="clearPackage()">🧹 Limpiar paquete</button>
+            </div>
+        </div>
+        <div class="col-md-6 text-end">
+            <h6>📊 Resumen</h6>
+            <p class="mb-1">Total de items: <strong>{{ package_items|length }}</strong></p>
+            <p class="mb-1">Costo estimado: <strong class="cost-highlight">DOP {{ "{:,.2f}".format(package_summary.total_cost if package_summary else 0) }}</strong></p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Agregar item al paquete
+document.getElementById('addItemForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const supplyId = document.getElementById('supplySelect').value;
+    const quantity = document.getElementById('quantityInput').value;
+    const usageType = document.getElementById('usageTypeSelect').value;
+    const isMandatory = document.getElementById('mandatorySelect').value === 'true';
+    const notes = document.getElementById('notesInput').value;
+    
+    if (!supplyId) {
+        alert('Selecciona un suministro');
+        return;
+    }
+    
+    fetch('{{ url_for("supply_packages.ajax_add_item") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            room_id: {{ room.id }},
+            supply_id: parseInt(supplyId),
+            quantity: parseInt(quantity),
+            is_mandatory: isMandatory,
+            usage_type: usageType,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Recargar para mostrar el nuevo item
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión');
+    });
+});
+
+// Editar item
+function editItem(itemId) {
+    const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+    
+    // Ocultar displays y mostrar edits
+    row.querySelectorAll('.quantity-display, .usage-type-display, .mandatory-display').forEach(el => el.classList.add('d-none'));
+    row.querySelectorAll('.quantity-edit, .usage-type-edit, .mandatory-edit').forEach(el => el.classList.remove('d-none'));
+    
+    // Cambiar botones
+    row.querySelector('.edit-btn').classList.add('d-none');
+    row.querySelectorAll('.save-btn, .cancel-btn').forEach(el => el.classList.remove('d-none'));
+}
+
+// Guardar item
+function saveItem(itemId) {
+    const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+    
+    const quantity = row.querySelector('.quantity-edit').value;
+    const usageType = row.querySelector('.usage-type-edit').value;
+    const isMandatory = row.querySelector('.mandatory-edit').value === 'true';
+    
+    fetch('{{ url_for("supply_packages.ajax_update_item") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            item_id: itemId,
+            quantity: parseInt(quantity),
+            is_mandatory: isMandatory,
+            usage_type: usageType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Recargar para mostrar cambios
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión');
+    });
+}
+
+// Cancelar edición
+function cancelEdit(itemId) {
+    const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+    
+    // Mostrar displays y ocultar edits
+    row.querySelectorAll('.quantity-display, .usage-type-display, .mandatory-display').forEach(el => el.classList.remove('d-none'));
+    row.querySelectorAll('.quantity-edit, .usage-type-edit, .mandatory-edit').forEach(el => el.classList.add('d-none'));
+    
+    // Cambiar botones
+    row.querySelector('.edit-btn').classList.remove('d-none');
+    row.querySelectorAll('.save-btn, .cancel-btn').forEach(el => el.classList.add('d-none'));
+}
+
+// Eliminar item
+function removeItem(itemId) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este item del paquete?')) {
+        return;
+    }
+    
+    fetch('{{ url_for("supply_packages.ajax_remove_item") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            item_id: itemId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Recargar para mostrar cambios
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión');
+    });
+}
+
+// Actualizar costo cuando cambia la cantidad
+document.getElementById('quantityInput').addEventListener('input', function() {
+    const select = document.getElementById('supplySelect');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (selectedOption && selectedOption.dataset.price) {
+        const price = parseFloat(selectedOption.dataset.price);
+        const quantity = parseInt(this.value) || 0;
+        const total = price * quantity;
+        
+        // Mostrar costo estimado (se podría agregar un elemento para esto)
+        console.log('Costo estimado:', total);
+    }
+});
+
+// Funciones adicionales
+function copyPackageToOther() {
+    // Implementar modal de copia similar al index
+    alert('Función de copia disponible desde el panel principal');
+}
+
+function exportPackage() {
+    // Implementar exportación
+    alert('Función de exportación en desarrollo');
+}
+
+function clearPackage() {
+    if (!confirm('¿Estás seguro de que deseas eliminar TODOS los items de este paquete?')) {
+        return;
+    }
+    
+    // Implementar limpieza del paquete
+    alert('Función de limpieza en desarrollo');
+}
+</script>
+{% endblock %}

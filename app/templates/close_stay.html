@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔒 Cerrar Estancia</h1>
+    <p>Verificación de inventario y cierre de estancia</p>
+</div>
+
+<div class="stay-closure-container">
+    <!-- Información de la Estancia -->
+    <div class="stay-info-section">
+        <h3>📋 Información de la Estancia</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Cliente:</span>
+                <span class="info-value">{{ stay.client.full_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Teléfono:</span>
+                <span class="info-value">{{ stay.client.phone_number }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Habitación:</span>
+                <span class="info-value">{{ stay.room.name }} ({{ stay.room.get_tier_display() }})</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Check-in:</span>
+                <span class="info-value">{{ stay.check_in_date.strftime('%d/%m/%Y %H:%M') }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Check-out:</span>
+                <span class="info-value">{{ stay.check_out_date.strftime('%d/%m/%Y %H:%M') if stay.check_out_date else 'En curso' }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Estado:</span>
+                <span class="info-value">{{ stay.get_status_display() }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Total Pagado:</span>
+                <span class="info-value">DOP {{ "{:,.2f}".format(stay.total_paid()) }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Canal:</span>
+                <span class="info-value">{{ stay.booking_channel }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if automatic_usages %}
+    <!-- Verificación de Inventario -->
+    <div class="inventory-verification">
+        <h3>📦 Verificación de Inventario</h3>
+        <p class="verification-explanation">
+            Los siguientes suministros fueron deducidos automáticamente. 
+            Por favor, verifica las cantidades realmente utilizadas:
+        </p>
+        
+        <form method="POST" id="closureForm">
+            {{ csrf_token() }}
+            
+            <div class="supplies-verification">
+                {% for usage in automatic_usages %}
+                <div class="supply-verification-item">
+                    <div class="supply-info">
+                        <h4>{{ usage.supply.name }}</h4>
+                        <div class="supply-details">
+                            <span class="category">{{ usage.supply.category }}</span>
+                            <span class="deduction-date">Deducido: {{ usage.usage_date.strftime('%d/%m/%Y %H:%M') }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="quantity-section">
+                        <div class="quantity-info">
+                            <div class="auto-quantity">
+                                <label>Cantidad Automática:</label>
+                                <span class="auto-value">{{ usage.quantity_used }}</span>
+                            </div>
+                            
+                            <div class="real-quantity">
+                                <label for="real_quantity_{{ usage.supply_id }}">Cantidad Real:</label>
+                                <input type="number" 
+                                       id="real_quantity_{{ usage.supply_id }}" 
+                                       name="real_quantity_{{ usage.supply_id }}" 
+                                       class="form-control quantity-input"
+                                       value="{{ usage.quantity_used }}" 
+                                       min="0"
+                                       data-auto="{{ usage.quantity_used }}"
+                                       data-supply="{{ usage.supply.name }}">
+                            </div>
+                        </div>
+                        
+                        <div class="difference-display" id="diff_{{ usage.supply_id }}">
+                            <span class="diff-label">Diferencia:</span>
+                            <span class="diff-value neutral">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stock-info">
+                        <span class="stock-label">Stock Actual:</span>
+                        <span class="stock-value">{{ usage.supply.current_stock }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Notas de Cierre -->
+            <div class="closure-notes">
+                <h4>📝 Notas de Cierre (Opcional)</h4>
+                <textarea name="closure_notes" id="closureNotes" class="form-control" rows="3"
+                          placeholder="Agregar notas sobre el estado de la habitación, problemas encontrados, etc."></textarea>
+            </div>
+            
+            <!-- Resumen de Ajustes -->
+            <div class="adjustment-summary" id="adjustmentSummary" style="display: none;">
+                <h4>📊 Resumen de Ajustes</h4>
+                <div id="summaryContent"></div>
+            </div>
+            
+            <!-- Botones de Acción -->
+            <div class="action-buttons">
+                <a href="{{ url_for('panel.index') }}" class="btn btn-secondary">
+                    ❌ Cancelar
+                </a>
+                <button type="submit" class="btn btn-success btn-lg" id="confirmButton">
+                    ✅ Confirmar y Cerrar Estancia
+                </button>
+            </div>
+        </form>
+    </div>
+    {% else %}
+    <!-- Sin Suministros Automáticos -->
+    <div class="no-supplies-message">
+        <div class="message-content">
+            <h3>ℹ️ Sin Suministros Automáticos</h3>
+            <p>Esta estancia no tiene suministros deducidos automáticamente.</p>
+            <p>La habitación <strong>{{ stay.room.name }}</strong> no tiene un paquete de suministros configurado.</p>
+            
+            <div class="quick-actions">
+                <a href="{{ url_for('supply_packages.index') }}" class="btn btn-primary">
+                    🎁 Configurar Paquetes
+                </a>
+                <form method="POST" style="display: inline;">
+                    {{ csrf_token() }}
+                    <button type="submit" class="btn btn-success">
+                        ✅ Cerrar Estancia Directamente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    const adjustmentSummary = document.getElementById('adjustmentSummary');
+    const summaryContent = document.getElementById('summaryContent');
+    
+    // Event listeners para los inputs de cantidad
+    quantityInputs.forEach(input => {
+        input.addEventListener('input', updateDifference);
+        input.addEventListener('blur', updateSummary);
+    });
+    
+    function updateDifference(event) {
+        const input = event.target;
+        const autoQuantity = parseInt(input.dataset.auto);
+        const realQuantity = parseInt(input.value) || 0;
+        const difference = realQuantity - autoQuantity;
+        const supplyId = input.id.replace('real_quantity_', '');
+        
+        const diffElement = document.getElementById(`diff_${supplyId}`);
+        const diffValue = diffElement.querySelector('.diff-value');
+        
+        diffValue.textContent = difference;
+        
+        // Aplicar clases CSS según la diferencia
+        diffValue.className = 'diff-value';
+        if (difference > 0) {
+            diffValue.classList.add('positive');
+        } else if (difference < 0) {
+            diffValue.classList.add('negative');
+        } else {
+            diffValue.classList.add('neutral');
+        }
+    }
+    
+    function updateSummary() {
+        const adjustments = [];
+        let totalAdjustments = 0;
+        
+        quantityInputs.forEach(input => {
+            const autoQuantity = parseInt(input.dataset.auto);
+            const realQuantity = parseInt(input.value) || 0;
+            const difference = realQuantity - autoQuantity;
+            
+            if (difference !== 0) {
+                adjustments.push({
+                    supply: input.dataset.supply,
+                    auto: autoQuantity,
+                    real: realQuantity,
+                    diff: difference
+                });
+                totalAdjustments += Math.abs(difference);
+            }
+        });
+        
+        if (adjustments.length > 0) {
+            let html = `<div class="summary-stats">
+                <span class="total-adjustments">Total de ajustes: ${totalAdjustments}</span>
+            </div>
+            <div class="adjustments-list">`;
+            
+            adjustments.forEach(adj => {
+                const action = adj.diff > 0 ? 'Usar más' : 'Devolver';
+                const icon = adj.diff > 0 ? '📤' : '📥';
+                html += `
+                    <div class="adjustment-item ${adj.diff > 0 ? 'increase' : 'decrease'}">
+                        <span class="adjustment-icon">${icon}</span>
+                        <span class="adjustment-supply">${adj.supply}</span>
+                        <span class="adjustment-change">${adj.auto} → ${adj.real}</span>
+                        <span class="adjustment-action">${action} ${Math.abs(adj.diff)}</span>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            summaryContent.innerHTML = html;
+            adjustmentSummary.style.display = 'block';
+        } else {
+            adjustmentSummary.style.display = 'none';
+        }
+    }
+    
+    // Inicializar diferencias
+    quantityInputs.forEach(input => {
+        updateDifference({ target: input });
+    });
+});
+</script>
+
+<style>
+.stay-closure-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.stay-info-section {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.info-value {
+    color: #007bff;
+}
+
+.inventory-verification {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.verification-explanation {
+    background: #e9ecef;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    color: #495057;
+}
+
+.supplies-verification {
+    margin-bottom: 25px;
+}
+
+.supply-verification-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    display: grid;
+    grid-template-columns: 1fr 300px 120px;
+    gap: 20px;
+    align-items: center;
+}
+
+.supply-info h4 {
+    margin: 0 0 8px 0;
+    color: #495057;
+}
+
+.supply-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.category {
+    background: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    width: fit-content;
+}
+
+.deduction-date {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+.quantity-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quantity-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.auto-quantity, .real-quantity {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.auto-quantity label, .real-quantity label {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #495057;
+}
+
+.auto-value {
+    background: #e9ecef;
+    padding: 8px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.quantity-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.difference-display {
+    text-align: center;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.diff-value.positive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.diff-value.negative {
+    background: #d4edda;
+    color: #155724;
+}
+
+.diff-value.neutral {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.stock-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.stock-label {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+.stock-value {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #007bff;
+}
+
+.closure-notes {
+    margin-bottom: 25px;
+}
+
+.closure-notes h4 {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.adjustment-summary {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.summary-stats {
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: bold;
+    color: #856404;
+}
+
+.adjustments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.adjustment-item {
+    display: grid;
+    grid-template-columns: 30px 1fr 120px 120px;
+    gap: 10px;
+    align-items: center;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.adjustment-item.increase {
+    background: #f8d7da;
+}
+
+.adjustment-item.decrease {
+    background: #d4edda;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.no-supplies-message {
+    background: white;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.message-content h3 {
+    color: #495057;
+    margin-bottom: 15px;
+}
+
+.quick-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+@media (max-width: 768px) {
+    .supply-verification-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .quantity-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .quick-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>
+{% endblock %}

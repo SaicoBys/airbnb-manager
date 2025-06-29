@@ -1,0 +1,230 @@
+{# ========================================================================== #}
+{# MACROS REUTILIZABLES - AIRBNB MANAGER V3.0                               #}
+{# ========================================================================== #}
+
+{# Macro para renderizar widgets de estadísticas #}
+{% macro render_stats_widget(icon, value, label, color_class='primary', extra_class='') %}
+<div class="stats-widget {{ color_class }} {{ extra_class }}">
+    <div class="stats-icon">{{ icon }}</div>
+    <div class="stats-number">{{ value }}</div>
+    <div class="stats-label">{{ label }}</div>
+</div>
+{% endmacro %}
+
+{# Macro para renderizar un widget completo con header y contenido #}
+{% macro render_widget(id, title, icon='', controls='', grid_area='', extra_class='') %}
+<div class="widget {{ extra_class }}" id="{{ id }}" {% if grid_area %}style="grid-area: {{ grid_area }};"{% endif %}>
+    <div class="widget-header">
+        <h2>{{ icon }} {{ title }}</h2>
+        {% if controls %}
+        <div class="widget-controls">
+            {{ controls | safe }}
+        </div>
+        {% endif %}
+    </div>
+    <div class="widget-content">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro para botones de acción #}
+{% macro render_button(text, type='button', class='btn btn-primary', onclick='', icon='', extra_attrs='') %}
+<button type="{{ type }}" class="{{ class }}" {% if onclick %}onclick="{{ onclick }}"{% endif %} {{ extra_attrs | safe }}>
+    {% if icon %}{{ icon }} {% endif %}{{ text }}
+</button>
+{% endmacro %}
+
+{# Macro para campos de formulario #}
+{% macro render_form_field(field_type, id, label, placeholder='', required=False, value='', options=[], extra_class='', extra_attrs='') %}
+<div class="form-section">
+    {% if label %}
+    <label for="{{ id }}">{{ label }}</label>
+    {% endif %}
+    
+    {% if field_type == 'text' or field_type == 'email' or field_type == 'tel' or field_type == 'number' or field_type == 'date' %}
+        <input type="{{ field_type }}" 
+               id="{{ id }}" 
+               class="form-control {{ extra_class }}" 
+               {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+               {% if required %}required{% endif %}
+               {% if value %}value="{{ value }}"{% endif %}
+               {{ extra_attrs | safe }}>
+               
+    {% elif field_type == 'select' %}
+        <select id="{{ id }}" class="form-control {{ extra_class }}" {% if required %}required{% endif %} {{ extra_attrs | safe }}>
+            {% if placeholder %}<option value="">{{ placeholder }}</option>{% endif %}
+            {% for option in options %}
+                {% if option is mapping %}
+                    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.text }}</option>
+                {% else %}
+                    <option value="{{ option }}">{{ option }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        
+    {% elif field_type == 'textarea' %}
+        <textarea id="{{ id }}" 
+                  class="form-control {{ extra_class }}" 
+                  {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+                  {% if required %}required{% endif %}
+                  {{ extra_attrs | safe }}>{{ value }}</textarea>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Macro para filas de formulario con múltiples columnas #}
+{% macro render_form_row(columns) %}
+<div class="form-row">
+    {% for column in columns %}
+    <div class="form-col">
+        {{ column | safe }}
+    </div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{# Macro para alertas/notificaciones #}
+{% macro render_alert(message, type='info', icon='', dismissible=True) %}
+<div class="alert alert-{{ type }} {% if dismissible %}alert-dismissible{% endif %}">
+    {% if icon %}{{ icon }} {% endif %}
+    {{ message }}
+    {% if dismissible %}
+    <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Macro para tablas de datos #}
+{% macro render_data_table(headers, rows, table_id='', extra_class='', actions_column=False) %}
+<div class="table-responsive">
+    <table class="table {{ extra_class }}" {% if table_id %}id="{{ table_id }}"{% endif %}>
+        <thead>
+            <tr>
+                {% for header in headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+                {% if actions_column %}
+                <th class="actions-column">Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr {% if row.get('extra_class') %}class="{{ row.extra_class }}"{% endif %}>
+                {% for cell in row.cells %}
+                <td {% if cell.get('class') %}class="{{ cell.class }}"{% endif %}>
+                    {{ cell.content | safe }}
+                </td>
+                {% endfor %}
+                {% if actions_column and row.get('actions') %}
+                <td class="actions-column">
+                    {{ row.actions | safe }}
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+{# Macro para listas de elementos con estilo #}
+{% macro render_item_list(items, item_template, empty_message='No hay elementos', extra_class='') %}
+<div class="item-list {{ extra_class }}">
+    {% if items %}
+        {% for item in items %}
+        <div class="item">
+            {{ item_template(item) | safe }}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">{{ empty_message }}</div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Macro para pestañas/tabs #}
+{% macro render_tabs(tabs, active_tab='') %}
+<div class="tabs-container">
+    <div class="tabs-nav">
+        {% for tab in tabs %}
+        <div class="tab-item {% if tab.id == active_tab or (loop.first and not active_tab) %}active{% endif %}" 
+             data-tab="{{ tab.id }}">
+            {% if tab.icon %}{{ tab.icon }} {% endif %}{{ tab.label }}
+            {% if tab.badge %}
+            <span class="tab-badge">{{ tab.badge }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="tabs-content">
+        {% for tab in tabs %}
+        <div class="tab-content {% if tab.id == active_tab or (loop.first and not active_tab) %}active{% endif %}" 
+             id="tab-{{ tab.id }}">
+            {{ tab.content | safe }}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro para loading states #}
+{% macro render_loading(message='Cargando...', size='normal') %}
+<div class="loading loading-{{ size }}">
+    <div class="loading-spinner"></div>
+    <div class="loading-message">{{ message }}</div>
+</div>
+{% endmacro %}
+
+{# Macro para badges/etiquetas #}
+{% macro render_badge(text, type='default', icon='') %}
+<span class="badge badge-{{ type }}">
+    {% if icon %}{{ icon }} {% endif %}{{ text }}
+</span>
+{% endmacro %}
+
+{# Macro para métricas con comparación #}
+{% macro render_metric(current_value, label, previous_value=None, format='number', icon='') %}
+<div class="metric">
+    <div class="metric-icon">{{ icon }}</div>
+    <div class="metric-content">
+        <div class="metric-value">
+            {% if format == 'currency' %}
+                DOP {{ "{:,.2f}".format(current_value) }}
+            {% elif format == 'percentage' %}
+                {{ "{:.1f}".format(current_value) }}%
+            {% else %}
+                {{ current_value }}
+            {% endif %}
+        </div>
+        <div class="metric-label">{{ label }}</div>
+        {% if previous_value is not none %}
+        <div class="metric-change">
+            {% set change = current_value - previous_value %}
+            {% set change_percent = (change / previous_value * 100) if previous_value != 0 else 0 %}
+            <span class="change {% if change > 0 %}positive{% elif change < 0 %}negative{% else %}neutral{% endif %}">
+                {% if change > 0 %}↗{% elif change < 0 %}↘{% else %}→{% endif %}
+                {{ "{:.1f}".format(change_percent|abs) }}%
+            </span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro para progress bars #}
+{% macro render_progress(current, total, label='', show_percentage=True, color='primary') %}
+<div class="progress-container">
+    {% if label %}
+    <div class="progress-label">{{ label }}</div>
+    {% endif %}
+    <div class="progress progress-{{ color }}">
+        {% set percentage = (current / total * 100) if total > 0 else 0 %}
+        <div class="progress-bar" style="width: {{ percentage }}%"></div>
+    </div>
+    {% if show_percentage %}
+    <div class="progress-text">{{ current }}/{{ total }} ({{ "{:.1f}".format(percentage) }}%)</div>
+    {% endif %}
+</div>
+{% endmacro %}

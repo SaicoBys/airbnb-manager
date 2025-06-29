@@ -36,14 +36,24 @@ def seed_db_command():
     db.session.commit()
     click.echo("Usuarios creados.")
 
-    # 3. Creamos las Habitaciones
-    click.echo("Creando habitaciones...")
-    room1 = Room(name='Habitación 1 - Vista al Jardín')
-    room2 = Room(name='Suite 2 - Balcón Privado')
-    room3 = Room(name='Habitación 3 - Económica')
-    db.session.add_all([room1, room2, room3])
+    # 3. Creamos las Habitaciones con jerarquía Queen/King
+    click.echo("Creando habitaciones con nueva jerarquía Queen/King...")
+    
+    # Habitaciones Queen (categoría estándar)
+    room1 = Room(name='Queen 101 - Vista Jardín', tier='Queen', status='Limpia')
+    room2 = Room(name='Queen 102 - Balcón', tier='Queen', status='Limpia')
+    room3 = Room(name='Queen 103 - Interior', tier='Queen', status='Limpia')
+    room4 = Room(name='Queen 201 - Vista Piscina', tier='Queen', status='Limpia')
+    room5 = Room(name='Queen 202 - Terraza', tier='Queen', status='Limpia')
+    
+    # Habitaciones King (categoría premium)
+    room6 = Room(name='King 203 - Suite Premium', tier='King', status='Limpia')
+    room7 = Room(name='King 301 - Penthouse', tier='King', status='Limpia')
+    room8 = Room(name='King 302 - Vista Mar', tier='King', status='Limpia')
+    
+    db.session.add_all([room1, room2, room3, room4, room5, room6, room7, room8])
     db.session.commit()
-    click.echo("Habitaciones creadas.")
+    click.echo("8 habitaciones creadas (5 Queen + 3 King).")
 
     # 4. Creamos los Clientes
     click.echo("Creando clientes...")

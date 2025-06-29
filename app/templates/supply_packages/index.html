@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_stats_widget, render_widget, render_button, render_data_table, render_badge, render_alert %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/macros.css') }}">
+<style>
+.package-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.room-package-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.room-package-card:hover {
+    transform: translateY(-2px);
+}
+
+.room-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.room-tier {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.package-summary {
+    margin: 15px 0;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+.no-package {
+    color: #6c757d;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.package-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.875em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con estadísticas -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>{{ title }}</h1>
+            <p class="text-muted">Configura paquetes de suministros automáticos para cada habitación</p>
+        </div>
+        <div class="d-flex gap-3">
+            {{ render_button('📊 Análisis', onclick="window.location.href='" + url_for('supply_packages.analytics') + "'", class='btn btn-info') }}
+            {{ render_button('📋 Plantillas', onclick="window.location.href='" + url_for('supply_packages.templates') + "'", class='btn btn-secondary') }}
+        </div>
+    </div>
+
+    <!-- Widgets de estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            {{ render_stats_widget('🏨', total_rooms, 'Total Habitaciones', 'primary') }}
+        </div>
+        <div class="col-md-3">
+            {% set rooms_with_pkg = rooms_with_packages | selectattr('summary') | list | length %}
+            {{ render_stats_widget('📦', rooms_with_pkg, 'Con Paquetes', 'success') }}
+        </div>
+        <div class="col-md-3">
+            {% set coverage = ((rooms_with_pkg / total_rooms * 100) | round(1)) if total_rooms > 0 else 0 %}
+            {{ render_stats_widget('📈', coverage|string + '%', 'Cobertura', 'info') }}
+        </div>
+        <div class="col-md-3">
+            {{ render_stats_widget('🧾', total_supplies, 'Suministros Disponibles', 'warning') }}
+        </div>
+    </div>
+
+    <!-- Filtros y acciones -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <input type="text" id="searchFilter" class="form-control" placeholder="Buscar habitación...">
+                <button class="btn btn-outline-secondary" type="button">🔍</button>
+            </div>
+        </div>
+        <div class="col-md-6 text-end">
+            <select id="filterStatus" class="form-select d-inline-block w-auto">
+                <option value="">Todas las habitaciones</option>
+                <option value="with-package">Con paquete</option>
+                <option value="without-package">Sin paquete</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Grid de habitaciones -->
+    <div class="package-grid" id="roomsGrid">
+        {% for room_data in rooms_with_packages %}
+        {% set room = room_data.room %}
+        {% set summary = room_data.summary %}
+        
+        <div class="room-package-card" data-room-name="{{ room.name.lower() }}" data-has-package="{{ 'true' if summary else 'false' }}">
+            <div class="room-header">
+                <div>
+                    <h5 class="mb-1">{{ room.name }}</h5>
+                    <div class="room-tier">{{ room.get_tier_display() }}</div>
+                </div>
+                <div>
+                    {% if summary %}
+                        {{ render_badge('Configurado', 'success') }}
+                    {% else %}
+                        {{ render_badge('Sin configurar', 'warning') }}
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if summary %}
+            <div class="package-summary">
+                <div class="summary-item">
+                    <span>📦 Total items:</span>
+                    <strong>{{ summary.total_items }}</strong>
+                </div>
+                <div class="summary-item">
+                    <span>🔴 Obligatorios:</span>
+                    <strong>{{ summary.mandatory_items }}</strong>
+                </div>
+                <div class="summary-item">
+                    <span>🔵 Opcionales:</span>
+                    <strong>{{ summary.optional_items }}</strong>
+                </div>
+                <div class="summary-item">
+                    <span>💰 Costo estimado:</span>
+                    <strong>DOP {{ "{:,.2f}".format(summary.total_cost) }}</strong>
+                </div>
+            </div>
+            {% else %}
+            <div class="no-package">
+                <p>No hay paquete configurado</p>
+                <p>👆 Haz clic en "Configurar" para empezar</p>
+            </div>
+            {% endif %}
+
+            <div class="package-actions">
+                {{ render_button('⚙️ Configurar', 
+                    onclick="window.location.href='" + url_for('supply_packages.room_package', room_id=room.id) + "'", 
+                    class='btn btn-primary btn-sm flex-fill') }}
+                
+                {% if summary %}
+                {{ render_button('📋 Copiar', 
+                    onclick="copyPackage(" + room.id|string + ")", 
+                    class='btn btn-outline-info btn-sm') }}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal para copiar paquete -->
+<div class="modal fade" id="copyPackageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📋 Copiar Paquete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Selecciona las habitaciones destino para copiar este paquete:</p>
+                <div id="targetRoomsContainer">
+                    <!-- Se llena dinámicamente -->
+                </div>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="overwritePackages">
+                    <label class="form-check-label" for="overwritePackages">
+                        Sobrescribir paquetes existentes
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="executeCopyPackage()">Copiar Paquete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let sourceRoomId = null;
+
+// Filtrar habitaciones
+document.getElementById('searchFilter').addEventListener('input', filterRooms);
+document.getElementById('filterStatus').addEventListener('change', filterRooms);
+
+function filterRooms() {
+    const searchTerm = document.getElementById('searchFilter').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value;
+    const cards = document.querySelectorAll('.room-package-card');
+    
+    cards.forEach(card => {
+        const roomName = card.dataset.roomName;
+        const hasPackage = card.dataset.hasPackage === 'true';
+        
+        let showCard = true;
+        
+        // Filtro de búsqueda
+        if (searchTerm && !roomName.includes(searchTerm)) {
+            showCard = false;
+        }
+        
+        // Filtro de estado
+        if (statusFilter === 'with-package' && !hasPackage) {
+            showCard = false;
+        } else if (statusFilter === 'without-package' && hasPackage) {
+            showCard = false;
+        }
+        
+        card.style.display = showCard ? 'block' : 'none';
+    });
+}
+
+// Función para copiar paquete
+function copyPackage(roomId) {
+    sourceRoomId = roomId;
+    
+    // Llenar modal con habitaciones destino
+    const container = document.getElementById('targetRoomsContainer');
+    container.innerHTML = '';
+    
+    {% for room_data in rooms_with_packages %}
+    if ({{ room_data.room.id }} !== roomId) {
+        container.innerHTML += `
+            <div class="form-check">
+                <input class="form-check-input target-room" type="checkbox" value="{{ room_data.room.id }}" id="room{{ room_data.room.id }}">
+                <label class="form-check-label" for="room{{ room_data.room.id }}">
+                    {{ room_data.room.name }} ({{ room_data.room.get_tier_display() }})
+                    {% if room_data.summary %}
+                        <span class="badge bg-warning ms-2">Tiene paquete</span>
+                    {% endif %}
+                </label>
+            </div>
+        `;
+    }
+    {% endfor %}
+    
+    // Mostrar modal
+    new bootstrap.Modal(document.getElementById('copyPackageModal')).show();
+}
+
+function executeCopyPackage() {
+    const targetRoomIds = Array.from(document.querySelectorAll('.target-room:checked'))
+                              .map(cb => parseInt(cb.value));
+    const overwrite = document.getElementById('overwritePackages').checked;
+    
+    if (targetRoomIds.length === 0) {
+        alert('Selecciona al menos una habitación destino');
+        return;
+    }
+    
+    // Hacer petición AJAX
+    fetch('{{ url_for("supply_packages.ajax_copy_package") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            source_room_id: sourceRoomId,
+            target_room_ids: targetRoomIds,
+            overwrite: overwrite
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload(); // Recargar para mostrar cambios
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión');
+    });
+    
+    // Cerrar modal
+    bootstrap.Modal.getInstance(document.getElementById('copyPackageModal')).hide();
+}
+</script>
+{% endblock %}

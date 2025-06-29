@@ -1,419 +1,2146 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="control-panel-container">
-    <!-- Header del Dashboard -->
+<div class="control-panel-v2">
+    <!-- Header del Panel -->
     <div class="panel-header">
-        <div class="panel-icon">
-            <img src="https://img.icons8.com/fluency/96/cottage.png" alt="Panel de Control Icono">
-        </div>
-        <div class="panel-title">
-            <h1>Panel de Control Airbnb</h1>
-            <p>Gestiona todo tu negocio desde un solo lugar</p>
-        </div>
+        <h1>🏠 Airbnb Manager v3.0</h1>
+        <p>Panel de Control Inteligente</p>
     </div>
 
-    <!-- Navegación por pestañas -->
-    <div class="tab-navigation">
-        <button class="tab-button" data-tab="overview">
-            <span class="tab-icon">📊</span>Resumen
-        </button>
-        <button class="tab-button" data-tab="clients">
-            <span class="tab-icon">👥</span>Clientes
-        </button>
-        <button class="tab-button" data-tab="stays">
-            <span class="tab-icon">🏨</span>Estancias
-        </button>
-        <button class="tab-button" data-tab="expenses">
-            <span class="tab-icon">💸</span>Gastos
-        </button>
-        <button class="tab-button" data-tab="inventory">
-            <span class="tab-icon">📦</span>Inventario
-        </button>
-        <button class="tab-button" data-tab="finances">
-            <span class="tab-icon">💰</span>Finanzas
-        </button>
-    </div>
-
-    <!-- Contenido de las pestañas -->
-    
-    <!-- Pestaña: Resumen General -->
-    <div id="overview" class="tab-content">
-        <!-- Estadísticas principales -->
-        <div class="dashboard-grid grid-4" style="margin-bottom: 30px;">
-            <div class="stats-widget primary">
-                <div class="icon">👥</div>
-                <div class="number">{{ total_clients }}</div>
-                <div class="label">Clientes Totales</div>
-            </div>
-            <div class="stats-widget success">
-                <div class="icon">🏨</div>
-                <div class="number">{{ active_stays }}</div>
-                <div class="label">Estancias Activas</div>
-            </div>
-            <div class="stats-widget warning">
-                <div class="icon">📦</div>
-                <div class="number">{{ low_stock_count }}</div>
-                <div class="label">Stock Bajo</div>
-            </div>
-            <div class="stats-widget danger">
-                <div class="icon">💸</div>
-                <div class="number">DOP {{ "{:,.0f}".format(monthly_expenses) }}</div>
-                <div class="label">Gastos del Mes</div>
-            </div>
-        </div>
-
-        <!-- Acciones rápidas -->
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h2 class="section-title">⚡ Acciones Rápidas</h2>
-            </div>
-            <div class="quick-actions">
-                <a href="#" class="quick-action" onclick="switchTabAndToggleForm('stays', 'stayForm')">
-                    <div class="action-icon">🏨</div>
-                    <div class="action-title">Nueva Estancia</div>
-                    <div class="action-desc">Registrar nuevo huésped</div>
-                </a>
-                <a href="#" class="quick-action" onclick="switchTabAndToggleForm('expenses', 'expenseForm')">
-                    <div class="action-icon">💸</div>
-                    <div class="action-title">Nuevo Gasto</div>
-                    <div class="action-desc">Registrar gastos del negocio</div>
-                </a>
-                <a href="#" class="quick-action" onclick="switchTabAndToggleForm('clients', 'clientForm')">
-                    <div class="action-icon">👤</div>
-                    <div class="action-title">Nuevo Cliente</div>
-                    <div class="action-desc">Añadir cliente al sistema</div>
-                </a>
-                <a href="#" class="quick-action" onclick="switchTabAndToggleForm('inventory', 'inventoryForm')">
-                    <div class="action-icon">📦</div>
-                    <div class="action-title">Actualizar Stock</div>
-                    <div class="action-desc">Gestionar inventario</div>
-                </a>
-            </div>
-        </div>
-
-        <!-- Alertas importantes -->
-        {% if low_stock_supplies %}
-        <div class="dashboard-alert warning">
-            <span>⚠️</span>
-            <div>
-                <strong>Stock Bajo:</strong> {{ low_stock_supplies|length }} producto(s) necesitan reposición.
-                <a href="#" onclick="switchTab('inventory')" style="color: inherit; text-decoration: underline;">Ver detalles</a>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Resumen financiero y Top Clientes -->
-        <div class="dashboard-grid grid-2">
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h3 class="section-title">💰 Finanzas del Mes</h3>
+    <!-- Grid de Widgets -->
+    <div class="widgets-container">
+        
+        <!-- Widget 0: Motor de Reservas Inteligente -->
+        {% include 'components/intelligent_booking_widget.html' %}
+        
+        <!-- Widget 1: Calendario de Disponibilidad Visual -->
+        <div class="widget calendar-widget" id="calendarWidget">
+            <div class="widget-header">
+                <h2>📅 Disponibilidad - Próximos 30 Días</h2>
+                <div class="widget-controls">
+                    <button class="btn btn-sm btn-outline" onclick="refreshCalendar()">🔄</button>
                 </div>
-                <div class="compact-list">
-                    <div class="compact-list-item">
-                        <div class="item-info"><div class="item-title">Ingresos</div></div>
-                        <div class="item-value text-success">DOP {{ "{:,.2f}".format(monthly_income) }}</div>
+            </div>
+            <div class="widget-content">
+                <div class="calendar-legend">
+                    <span class="legend-item available">🟢 Disponible</span>
+                    <span class="legend-item occupied">🔴 Ocupado</span>
+                    <span class="legend-item checkin">🟡 Check-in</span>
+                    <span class="legend-item checkout">🟠 Check-out</span>
+                    <span class="legend-item maintenance">⚫ Mantenimiento</span>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <div class="loading">Cargando calendario...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget 2: Formulario de Registro Unificado -->
+        <div class="widget registration-widget" id="registrationWidget">
+            <div class="widget-header">
+                <h2>⚡ Registro Rápido</h2>
+            </div>
+            <div class="widget-content">
+                <form id="quickRegistrationForm" class="quick-form">
+                    <div class="form-section">
+                        <label>📞 Buscar Cliente</label>
+                        <input type="tel" id="phoneSearch" placeholder="809-123-4567" class="form-control phone-input">
+                        <div class="client-results" id="clientResults"></div>
                     </div>
-                    <div class="compact-list-item">
-                        <div class="item-info"><div class="item-title">Gastos Elizabeth (Caja)</div></div>
-                        <div class="item-value text-warning">DOP {{ "{:,.2f}".format(elizabeth_expenses) }}</div>
+                    
+                    <div class="form-section">
+                        <div class="form-row">
+                            <div class="form-col">
+                                <label>🏨 Habitación</label>
+                                <select id="roomSelect" class="form-control">
+                                    <option value="">Seleccionar...</option>
+                                    {% for room in rooms %}
+                                    <option value="{{ room.id }}">{{ room.name }} ({{ room.get_tier_display() }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-col">
+                                <label>📅 Check-in</label>
+                                <input type="date" id="checkinDate" class="form-control">
+                            </div>
+                        </div>
                     </div>
-                    <div class="compact-list-item">
-                        <div class="item-info"><div class="item-title">Gastos Totales (Negocio)</div></div>
-                        <div class="item-value text-danger">DOP {{ "{:,.2f}".format(total_expenses) }}</div>
+
+                    <div class="form-section">
+                        <div class="form-row">
+                            <div class="form-col">
+                                <label>📅 Check-out</label>
+                                <input type="date" id="checkoutDate" class="form-control">
+                            </div>
+                            <div class="form-col">
+                                <label>📱 Canal</label>
+                                <select id="channelSelect" class="form-control">
+                                    <option value="Directo">Directo</option>
+                                    <option value="Airbnb">Airbnb</option>
+                                    <option value="Booking.com">Booking.com</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    <div class="compact-list-item">
-                        <div class="item-info"><div class="item-title"><strong>Ganancia Neta</strong></div></div>
-                        <div class="item-value {% if monthly_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
-                            <strong>DOP {{ "{:,.2f}".format(monthly_profit) }}</strong>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="saveClientOnly()">👤 Solo Cliente</button>
+                        <button type="submit" class="btn btn-primary">🏨 Estancia Completa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Widget 3: Gastos del Día -->
+        <div class="widget expenses-widget" id="expensesWidget">
+            <div class="widget-header">
+                <h2>💸 Gastos <span id="periodTitle">Hoy</span></h2>
+                <div class="widget-controls">
+                    <div class="period-filters">
+                        <button class="period-btn active" data-period="today">Hoy</button>
+                        <button class="period-btn" data-period="yesterday">Ayer</button>
+                        <button class="period-btn" data-period="week">7 días</button>
+                    </div>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div class="expense-summary" id="expenseSummary">
+                    <div class="summary-item">
+                        <span class="label">Total:</span>
+                        <span class="value" id="totalExpenses">DOP 0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Elizabeth:</span>
+                        <span class="value" id="elizabethExpenses">DOP 0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Cantidad:</span>
+                        <span class="value" id="expenseCount">0</span>
+                    </div>
+                </div>
+                
+                <form id="quickExpenseForm" class="quick-form">
+                    <div class="form-row">
+                        <div class="form-col-wide">
+                            <input type="text" id="expenseDesc" placeholder="Descripción del gasto..." class="form-control" required>
+                        </div>
+                        <div class="form-col-narrow">
+                            <input type="number" id="expenseAmount" placeholder="Monto" class="form-control" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="form-col-btn">
+                            <button type="submit" class="btn btn-success">➕</button>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <select id="expenseCategory" class="form-control">
+                                <option value="Suministros">Suministros</option>
+                                <option value="Servicios">Servicios</option>
+                                <option value="Mantenimiento">Mantenimiento</option>
+                                <option value="Transporte">Transporte</option>
+                                <option value="Alimentación">Alimentación</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-col">
+                            <select id="expenseMethod" class="form-control">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="expenses-list" id="expensesList">
+                    <div class="loading">Cargando gastos...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget 4: Clientes Relevantes -->
+        <div class="widget clients-widget" id="clientsWidget">
+            <div class="widget-header">
+                <h2>👥 Actividad de Clientes</h2>
+                <div class="widget-controls">
+                    <span class="client-count" id="clientCount">0 clientes</span>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div class="client-categories">
+                    <div class="category-tab active" data-category="current">
+                        <span class="tab-icon">🏨</span>
+                        <span class="tab-text">Actuales</span>
+                        <span class="tab-badge" id="currentCount">0</span>
+                    </div>
+                    <div class="category-tab" data-category="arriving">
+                        <span class="tab-icon">✈️</span>
+                        <span class="tab-text">Llegan</span>
+                        <span class="tab-badge" id="arrivingCount">0</span>
+                    </div>
+                    <div class="category-tab" data-category="departing">
+                        <span class="tab-icon">🚪</span>
+                        <span class="tab-text">Salen</span>
+                        <span class="tab-badge" id="departingCount">0</span>
+                    </div>
+                    <div class="category-tab" data-category="recent">
+                        <span class="tab-icon">🕒</span>
+                        <span class="tab-text">Recientes</span>
+                        <span class="tab-badge" id="recentCount">0</span>
+                    </div>
+                </div>
+                
+                <div class="clients-list" id="clientsList">
+                    <div class="loading">Cargando clientes...</div>
+                </div>
+
+                <!-- Búsqueda rápida -->
+                <div class="client-search">
+                    <input type="text" id="clientSearchInput" placeholder="Buscar cliente..." class="form-control form-control-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget 5: Control de Inventario -->
+        <div class="widget inventory-widget" id="inventoryWidget">
+            <div class="widget-header">
+                <h2>📦 Control de Inventario</h2>
+                <div class="widget-controls">
+                    <button class="btn btn-sm btn-outline" onclick="refreshInventory()">🔄</button>
+                    <span class="last-update" id="lastUpdate">{{ moment().strftime('%H:%M') }}</span>
+                </div>
+            </div>
+            <div class="widget-content">
+                <!-- Resumen de Alertas -->
+                <div class="inventory-summary">
+                    <div class="summary-grid">
+                        <div class="summary-card critical">
+                            <div class="card-number" id="criticalCount">{{ low_stock_count }}</div>
+                            <div class="card-label">Críticos</div>
+                        </div>
+                        <div class="summary-card warning">
+                            <div class="card-number" id="warningCount">0</div>
+                            <div class="card-label">Advertencia</div>
+                        </div>
+                        <div class="summary-card pending">
+                            <div class="card-number" id="pendingCount">{{ pending_closure_stays|length }}</div>
+                            <div class="card-label">Pendientes</div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h3 class="section-title">🏆 Top Clientes</h3>
-                </div>
-                <div class="compact-list">
-                    {% for client in top_clients[:5] %}
-                    <div class="compact-list-item">
-                        <div class="item-info">
-                            <div class="item-title">{{ client.full_name.title() }}</div>
-                            <div class="item-subtitle">{{ client.visit_count() }} visita(s)</div>
+                <!-- Acción Rápida -->
+                <div class="quick-action-section">
+                    <h4>⚡ Acción Rápida</h4>
+                    <div class="action-tabs">
+                        <button class="action-tab active" data-action="add">➕ Agregar</button>
+                        <button class="action-tab" data-action="use">➖ Usar</button>
+                        <button class="action-tab" data-action="adjust">🔧 Ajustar</button>
+                    </div>
+                    
+                    <form id="quickInventoryForm" class="quick-form">
+                        <div class="form-row">
+                            <div class="form-col-wide">
+                                <select id="inventorySupplySelect" class="form-control" required>
+                                    <option value="">Seleccionar producto...</option>
+                                    {% for supply in supplies %}
+                                    <option value="{{ supply.id }}" data-stock="{{ supply.current_stock }}" data-min="{{ supply.minimum_stock }}">
+                                        {{ supply.name }} (Stock: {{ supply.current_stock }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-col-narrow">
+                                <input type="number" id="inventoryQuantity" placeholder="Cantidad" class="form-control" min="1" required>
+                            </div>
+                            <div class="form-col-btn">
+                                <button type="submit" class="btn btn-primary">💾</button>
+                            </div>
                         </div>
-                        <div class="item-value">DOP {{ "{:,.0f}".format(client.total_spent()) }}</div>
+                        <div class="form-row">
+                            <div class="form-col">
+                                <input type="text" id="inventoryNotes" placeholder="Notas (opcional)" class="form-control">
+                            </div>
+                        </div>
+                        <div class="action-preview" id="actionPreview" style="display: none;">
+                            <span class="preview-text"></span>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Pendientes de Cierre -->
+                {% if pending_closure_stays %}
+                <div class="pending-closures">
+                    <h4>🔒 Pendientes de Cierre</h4>
+                    {% for stay in pending_closure_stays %}
+                    <div class="closure-item">
+                        <div class="closure-info">
+                            <span class="room">{{ stay.room.name }}</span>
+                            <span class="client">{{ stay.client.full_name }}</span>
+                        </div>
+                        <a href="{{ url_for('main.close_stay', stay_id=stay.id) }}" class="btn btn-sm btn-warning">Cerrar</a>
                     </div>
-                    {% else %}
-                    <p class="text-muted">No hay datos de clientes.</p>
                     {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Lista de Stock Bajo -->
+                <div class="stock-alerts" id="stockAlerts">
+                    <h4>⚠️ Alertas de Stock</h4>
+                    <div class="alerts-list" id="alertsList">
+                        {% for supply in low_stock_supplies %}
+                        <div class="stock-item critical" data-supply-id="{{ supply.id }}">
+                            <div class="item-info">
+                                <span class="name">{{ supply.name }}</span>
+                                <span class="category">{{ supply.category }}</span>
+                            </div>
+                            <div class="item-stock">
+                                <span class="current">{{ supply.current_stock }}</span>
+                                <span class="separator">/</span>
+                                <span class="minimum">{{ supply.minimum_stock }}</span>
+                            </div>
+                            <div class="item-status">
+                                <span class="status-indicator critical">🔴</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Pestaña: Clientes -->
-    <div id="clients" class="tab-content">
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h2 class="section-title">👥 Gestión de Clientes</h2>
-                <div class="section-actions">
-                    <button class="btn btn-primary" onclick="toggleForm('clientForm')"><span>➕</span> Nuevo Cliente</button>
-                </div>
-            </div>
-            <div id="clientForm" class="compact-form" style="display: none;">
-                <h4>➕ Registrar Nuevo Cliente</h4>
-                <form action="{{ url_for('main.add_client_ajax') }}" method="post" class="ajax-form">
-                    <div class="form-inline-grid">
-                        <div class="form-group"><label for="client_name">Nombre Completo *</label><input type="text" id="client_name" name="full_name" required></div>
-                        <div class="form-group"><label for="client_phone">Teléfono *</label><input type="tel" id="client_phone" name="phone_number" required></div>
-                        <div class="form-group"><label for="client_email">Email</label><input type="email" id="client_email" name="email"></div>
-                        <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-success btn-block">Guardar Cliente</button></div>
-                    </div>
-                </form>
-            </div>
-            <table class="data-table">
-                <thead><tr><th>Cliente</th><th>Teléfono</th><th>Visitas</th><th>Última Visita</th><th>Total Gastado</th></tr></thead>
-                <tbody>
-                    {% for client in clients %}
-                    <tr>
-                        <td><strong>{{ client.full_name.title() }}</strong>{% if client.email %}<br><small class="text-muted">{{ client.email }}</small>{% endif %}</td>
-                        <td>{{ client.phone_number }}</td>
-                        <td class="text-center"><span class="badge badge-primary">{{ client.visit_count() }}</span></td>
-                        <td>{% if client.last_visit() %}{{ client.last_visit().strftime('%d/%m/%Y') }}{% else %}<span class="text-muted">Nunca</span>{% endif %}</td>
-                        <td class="text-right money-amount">DOP {{ "{:,.0f}".format(client.total_spent()) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Pestaña: Estancias -->
-    <div id="stays" class="tab-content">
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h2 class="section-title">🏨 Gestión de Estancias</h2>
-                <div class="section-actions">
-                    <button class="btn btn-primary" onclick="toggleForm('stayForm')"><span>➕</span> Nueva Estancia</button>
-                </div>
-            </div>
-            <div id="stayForm" class="compact-form" style="display: none;">
-                <h4>🏨 Registrar Nueva Estancia</h4>
-                <form action="{{ url_for('main.add_stay_ajax') }}" method="post" class="ajax-form">
-                    <div class="form-inline-grid">
-                        <div class="form-group"><label for="stay_client">Cliente *</label><select id="stay_client" name="client_id" required><option value="">Seleccionar...</option>{% for client in clients %}<option value="{{ client.id }}">{{ client.full_name }}</option>{% endfor %}</select></div>
-                        <div class="form-group"><label for="stay_room">Habitación *</label><select id="stay_room" name="room_id" required><option value="">Seleccionar...</option>{% for room in rooms %}<option value="{{ room.id }}">{{ room.name }}</option>{% endfor %}</select></div>
-                        <div class="form-group"><label for="stay_checkin">Check-in *</label><input type="datetime-local" id="stay_checkin" name="check_in_date" required></div>
-                        <div class="form-group"><label for="stay_checkout">Check-out</label><input type="datetime-local" id="stay_checkout" name="check_out_date"></div>
-                        <div class="form-group"><label for="stay_channel">Canal Reserva</label><select id="stay_channel" name="booking_channel"><option value="Directo">Directo</option><option value="Airbnb">Airbnb</option><option value="Booking.com">Booking.com</option></select></div>
-                        <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-success btn-block">Crear Estancia</button></div>
-                    </div>
-                </form>
-            </div>
-            <table class="data-table">
-                <thead><tr><th>Cliente</th><th>Habitación</th><th>Check-in</th><th>Check-out</th><th>Canal</th><th>Total Pagado</th></tr></thead>
-                <tbody>
-                    {% for stay in recent_stays %}
-                    <tr>
-                        <td><strong>{{ stay.client.full_name.title() }}</strong></td>
-                        <td>{{ stay.room.name }}</td>
-                        <td>{{ stay.check_in_date.strftime('%d/%m/%Y %H:%M') }}</td>
-                        <td>{% if stay.check_out_date %}{{ stay.check_out_date.strftime('%d/%m/%Y %H:%M') }}{% else %}<span class="badge badge-success">Activa</span>{% endif %}</td>
-                        <td><span class="badge badge-info">{{ stay.booking_channel }}</span></td>
-                        <td class="text-right money-amount">DOP {{ "{:,.0f}".format(stay.total_paid()) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Pestaña: Gastos -->
-    <div id="expenses" class="tab-content">
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h2 class="section-title">💸 Gestión de Gastos</h2>
-                <div class="section-actions">
-                    <button class="btn btn-primary" onclick="toggleForm('expenseForm')"><span>➕</span> Nuevo Gasto</button>
-                </div>
-            </div>
-            <div id="expenseForm" class="compact-form" style="display: none;">
-                <h4>💸 Registrar Nuevo Gasto</h4>
-                <form action="{{ url_for('main.add_expense_ajax') }}" method="post" class="ajax-form">
-                    <div class="form-inline-grid">
-                        <div class="form-group"><label for="expense_desc">Descripción *</label><input type="text" id="expense_desc" name="description" required></div>
-                        <div class="form-group"><label for="expense_amount">Monto (DOP) *</label><input type="number" step="0.01" id="expense_amount" name="amount" required></div>
-                        <div class="form-group"><label for="expense_category">Categoría</label><select id="expense_category" name="category"><option value="Suministros">Suministros</option><option value="Servicios">Servicios</option><option value="Mantenimiento">Mantenimiento</option></select></div>
-                        <div class="form-group"><label for="expense_method">Método Pago</label><select id="expense_method" name="payment_method"><option value="Efectivo">Efectivo</option><option value="Tarjeta">Tarjeta</option></select></div>
-                        <div class="form-group"><label for="expense_paidby">Pagado por *</label><select id="expense_paidby" name="paid_by_user_id" required>{% for user in users %}<option value="{{ user.id }}">{{ user.get_display_name() }}</option>{% endfor %}</select></div>
-                        <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-success btn-block">Guardar Gasto</button></div>
-                    </div>
-                </form>
-            </div>
-            <table class="data-table">
-                <thead><tr><th>Fecha</th><th>Descripción</th><th>Monto</th><th>Pagado por</th><th>Impacto Caja</th></tr></thead>
-                <tbody>
-                    {% for expense in recent_expenses %}
-                    <tr class="{% if expense.affects_cash_closure() %}employee-expense{% endif %}">
-                        <td>{{ expense.expense_date.strftime('%d/%m/%Y') }}</td>
-                        <td><strong>{{ expense.description }}</strong></td>
-                        <td class="text-right money-amount">DOP {{ "{:,.2f}".format(expense.amount) }}</td>
-                        <td>{{ expense.paid_by.get_display_name() if expense.paid_by else 'N/A' }}</td>
-                        <td class="text-center">{% if expense.affects_cash_closure() %}<span class="badge badge-warning">Sí</span>{% else %}<span class="badge badge-secondary">No</span>{% endif %}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Pestaña: Inventario -->
-    <div id="inventory" class="tab-content">
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h2 class="section-title">📦 Gestión de Inventario</h2>
-                <div class="section-actions">
-                    <button class="btn btn-primary" onclick="toggleForm('inventoryForm')"><span>🔄</span> Actualizar Stock</button>
-                </div>
-            </div>
-            <div id="inventoryForm" class="compact-form" style="display: none;">
-                <h4>🔄 Actualizar Stock de Producto</h4>
-                <form action="{{ url_for('main.update_stock_ajax') }}" method="post" class="ajax-form">
-                    <div class="form-inline-grid">
-                        <div class="form-group"><label for="supply_select">Producto *</label><select id="supply_select" name="supply_id" required><option value="">Seleccionar...</option>{% for supply in supplies %}<option value="{{ supply.id }}">{{ supply.name }}</option>{% endfor %}</select></div>
-                        <div class="form-group"><label for="stock_change">Cambio (+/-)</label><input type="number" id="stock_change" name="quantity_change" placeholder="+10 o -5" required></div>
-                        <div class="form-group"><label for="stock_reason">Motivo</label><select id="stock_reason" name="reason"><option value="Compra">Compra</option><option value="Uso">Uso</option><option value="Ajuste">Ajuste</option></select></div>
-                        <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-success btn-block">Actualizar Stock</button></div>
-                    </div>
-                </form>
-            </div>
-            <table class="data-table">
-                <thead><tr><th>Producto</th><th>Categoría</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Estado</th></tr></thead>
-                <tbody>
-                    {% for supply in supplies %}
-                    <tr>
-                        <td><strong>{{ supply.name }}</strong></td>
-                        <td>{{ supply.category }}</td>
-                        <td class="text-center"><strong>{{ supply.current_stock }}</strong></td>
-                        <td class="text-center">{{ supply.minimum_stock }}</td>
-                        <td class="text-center">{% if supply.is_low_stock() %}<span class="badge badge-danger">Bajo</span>{% else %}<span class="badge badge-success">OK</span>{% endif %}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Pestaña: Finanzas -->
-    <div id="finances" class="tab-content">
-        <p>Contenido de la pestaña de Finanzas irá aquí...</p>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // --- LÓGICA DE PESTAÑAS ---
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
+    // Inicializar widgets
+    initializeIntelligentBooking();
+    initializeCalendar();
+    initializeExpenses();
+    initializeClients();
+    initializeRegistration();
+    initializeInventory();
 
-    window.switchTab = function(tabId) {
-        tabContents.forEach(content => {
-            content.style.display = 'none';
-            content.classList.remove('active');
-        });
-        tabButtons.forEach(button => {
-            button.classList.remove('active');
-        });
+    // Auto-refresh cada 5 minutos
+    setInterval(function() {
+        refreshIntelligentNotifications();
+        refreshCalendar();
+        refreshExpenses();
+        refreshClients();
+        refreshInventory();
+    }, 300000);
+});
 
-        const activeContent = document.getElementById(tabId);
-        const activeButton = document.querySelector(`.tab-button[data-tab='${tabId}']`);
+// ============================================================================
+// WIDGET 0: MOTOR DE RESERVAS INTELIGENTE
+// ============================================================================
+function initializeIntelligentBooking() {
+    // El widget inteligente se inicializa automáticamente con su propio script
+    // Aquí solo cargamos las notificaciones inteligentes
+    refreshIntelligentNotifications();
+}
 
-        if (activeContent) {
-            activeContent.style.display = 'block';
-            activeContent.classList.add('active');
+async function refreshIntelligentNotifications() {
+    try {
+        const response = await fetch('/intelligence/dashboard_notifications');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayIntelligentNotifications(data.data);
         }
-        if (activeButton) {
-            activeButton.classList.add('active');
+    } catch (error) {
+        console.error('Error al cargar notificaciones inteligentes:', error);
+    }
+}
+
+function displayIntelligentNotifications(notificationsData) {
+    // Mostrar contador de notificaciones críticas en el header si existen
+    if (notificationsData.critical_count > 0) {
+        showCriticalNotificationsBadge(notificationsData.critical_count);
+    }
+    
+    // Integrar notificaciones con los widgets existentes
+    integrateNotificationsWithWidgets(notificationsData.notifications);
+}
+
+function showCriticalNotificationsBadge(count) {
+    const header = document.querySelector('.panel-header h1');
+    if (header && !header.querySelector('.critical-badge')) {
+        const badge = document.createElement('span');
+        badge.className = 'critical-badge';
+        badge.textContent = count;
+        badge.title = `${count} alertas críticas`;
+        header.appendChild(badge);
+    }
+}
+
+function integrateNotificationsWithWidgets(notifications) {
+    // Integrar notificaciones críticas con el widget de inventario
+    if (notifications.critical && notifications.critical.length > 0) {
+        const inventoryWidget = document.getElementById('inventoryWidget');
+        if (inventoryWidget) {
+            addNotificationIndicator(inventoryWidget, notifications.critical.length, 'critical');
         }
+    }
+    
+    // Integrar oportunidades de negocio
+    if (notifications.business_opportunities && notifications.business_opportunities.length > 0) {
+        const intelligentWidget = document.getElementById('intelligentBookingWidget');
+        if (intelligentWidget) {
+            addBusinessOpportunityIndicator(intelligentWidget, notifications.business_opportunities);
+        }
+    }
+}
+
+function addNotificationIndicator(widget, count, type) {
+    const header = widget.querySelector('.widget-header h2');
+    if (header && !header.querySelector('.notification-indicator')) {
+        const indicator = document.createElement('span');
+        indicator.className = `notification-indicator ${type}`;
+        indicator.textContent = count;
+        indicator.title = `${count} ${type === 'critical' ? 'alertas críticas' : 'notificaciones'}`;
+        header.appendChild(indicator);
+    }
+}
+
+function addBusinessOpportunityIndicator(widget, opportunities) {
+    // Agregar un pequeño indicador de oportunidades de negocio
+    const header = widget.querySelector('.widget-header');
+    if (header && !header.querySelector('.opportunities-indicator')) {
+        const indicator = document.createElement('div');
+        indicator.className = 'opportunities-indicator';
+        indicator.innerHTML = `💡 ${opportunities.length} oportunidades detectadas`;
+        indicator.title = opportunities.map(o => o.title).join(', ');
+        header.appendChild(indicator);
+    }
+}
+
+// ============================================================================
+// WIDGET 1: CALENDARIO DE DISPONIBILIDAD
+// ============================================================================
+function initializeCalendar() {
+    refreshCalendar();
+}
+
+async function refreshCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    grid.innerHTML = '<div class="loading">Actualizando...</div>';
+    
+    try {
+        const response = await fetch('/ajax/get_availability_grid');
+        const data = await response.json();
+        
+        if (data.success) {
+            renderCalendarGrid(data.grid, data.dates);
+        } else {
+            grid.innerHTML = '<div class="error">Error al cargar calendario</div>';
+        }
+    } catch (error) {
+        grid.innerHTML = '<div class="error">Error de conexión</div>';
+    }
+}
+
+function renderCalendarGrid(grid, dates) {
+    const container = document.getElementById('calendarGrid');
+    let html = '<div class="calendar-table">';
+    
+    // Header con fechas
+    html += '<div class="calendar-row header">';
+    html += '<div class="calendar-cell room-header">Habitación</div>';
+    dates.forEach(date => {
+        const dateObj = new Date(date.date);
+        html += `<div class="calendar-cell date-header" title="${date.friendly}">
+            <div class="date-day">${dateObj.getDate()}</div>
+            <div class="date-month">${dateObj.toLocaleDateString('es', {month: 'short'})}</div>
+        </div>`;
+    });
+    html += '</div>';
+    
+    // Filas por habitación
+    Object.entries(grid).forEach(([roomName, roomData]) => {
+        html += '<div class="calendar-row">';
+        html += `<div class="calendar-cell room-name">${roomName}</div>`;
+        
+        roomData.forEach(cell => {
+            const statusClass = cell.status.toLowerCase().replace(' ', '-');
+            html += `<div class="calendar-cell status-${statusClass}" 
+                          title="${cell.tooltip || cell.status}"
+                          data-room="${roomName}" 
+                          data-date="${cell.date}">
+                ${getStatusIcon(cell.status)}
+            </div>`;
+        });
+        html += '</div>';
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function getStatusIcon(status) {
+    const icons = {
+        'Disponible': '🟢',
+        'Ocupado': '🔴',
+        'Check-in': '🟡',
+        'Check-out': '🟠',
+        'Mantenimiento': '⚫'
     };
+    return icons[status] || '❓';
+}
 
-    tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-tab');
-            switchTab(tabId);
+// ============================================================================
+// WIDGET 2: REGISTRO UNIFICADO
+// ============================================================================
+function initializeRegistration() {
+    const phoneInput = document.getElementById('phoneSearch');
+    const form = document.getElementById('quickRegistrationForm');
+    
+    // Mascarilla de teléfono y búsqueda
+    phoneInput.addEventListener('input', function() {
+        this.value = formatPhone(this.value);
+        if (this.value.length >= 12) {
+            searchClient(this.value);
+        }
+    });
+    
+    // Envío del formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitStay();
+    });
+}
+
+function formatPhone(phone) {
+    const cleaned = phone.replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+    if (match) {
+        return !match[2] ? match[1] : `${match[1]}-${match[2]}${match[3] ? `-${match[3]}` : ''}`;
+    }
+    return phone;
+}
+
+async function searchClient(phone) {
+    const results = document.getElementById('clientResults');
+    
+    try {
+        const response = await fetch('/ajax/search_client_by_phone', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({phone: phone})
+        });
+        const data = await response.json();
+        
+        if (data.found) {
+            results.innerHTML = `<div class="client-found">
+                ✅ Cliente encontrado: <strong>${data.client.full_name}</strong>
+                <br><small>${data.client.visit_count} visitas - Último: ${data.client.last_visit}</small>
+            </div>`;
+        } else {
+            results.innerHTML = `<div class="client-not-found">
+                ❌ Cliente no encontrado. Se creará automáticamente.
+            </div>`;
+        }
+    } catch (error) {
+        results.innerHTML = '<div class="error">Error en búsqueda</div>';
+    }
+}
+
+async function submitStay() {
+    const formData = {
+        phone: document.getElementById('phoneSearch').value,
+        room_id: document.getElementById('roomSelect').value,
+        check_in_date: document.getElementById('checkinDate').value,
+        check_out_date: document.getElementById('checkoutDate').value,
+        booking_channel: document.getElementById('channelSelect').value
+    };
+    
+    try {
+        const response = await fetch('/ajax/quick_stay', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        });
+        const data = await response.json();
+        
+        showAlert(data.success ? 'success' : 'error', data.message);
+        if (data.success) {
+            document.getElementById('quickRegistrationForm').reset();
+            document.getElementById('clientResults').innerHTML = '';
+            refreshCalendar();
+        }
+    } catch (error) {
+        showAlert('error', 'Error de conexión');
+    }
+}
+
+async function saveClientOnly() {
+    const phone = document.getElementById('phoneSearch').value;
+    if (!phone) {
+        showAlert('error', 'Ingresa un número de teléfono');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/ajax/save_client_only', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({phone: phone})
+        });
+        const data = await response.json();
+        
+        showAlert(data.success ? 'success' : 'error', data.message);
+        if (data.success) {
+            document.getElementById('phoneSearch').value = '';
+            document.getElementById('clientResults').innerHTML = '';
+        }
+    } catch (error) {
+        showAlert('error', 'Error de conexión');
+    }
+}
+
+// ============================================================================
+// WIDGET 3: GASTOS
+// ============================================================================
+function initializeExpenses() {
+    const periodButtons = document.querySelectorAll('.period-btn');
+    const form = document.getElementById('quickExpenseForm');
+    
+    // Event listeners para botones de período
+    periodButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            periodButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const period = this.dataset.period;
+            const titles = {
+                'today': 'Hoy',
+                'yesterday': 'Ayer', 
+                'week': 'Últimos 7 días'
+            };
+            document.getElementById('periodTitle').textContent = titles[period] || 'Hoy';
+            
+            refreshExpenses(period);
         });
     });
+    
+    // Event listener para el formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitExpense();
+    });
+    
+    // Cargar gastos iniciales
+    refreshExpenses('today');
+}
 
-    // Abrir la primera pestaña por defecto
-    if (tabButtons.length > 0) {
-        switchTab(tabButtons[0].getAttribute('data-tab'));
+async function refreshExpenses(period = 'today') {
+    const list = document.getElementById('expensesList');
+    list.innerHTML = '<div class="loading">Cargando...</div>';
+    
+    try {
+        const response = await fetch(`/ajax/get_expenses?period=${period}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar resumen
+            document.getElementById('totalExpenses').textContent = `DOP ${data.total.toLocaleString('es-DO', {minimumFractionDigits: 2})}`;
+            document.getElementById('elizabethExpenses').textContent = `DOP ${data.elizabeth.toLocaleString('es-DO', {minimumFractionDigits: 2})}`;
+            document.getElementById('expenseCount').textContent = data.count;
+            
+            // Renderizar lista
+            renderExpensesList(data.expenses);
+        } else {
+            list.innerHTML = '<div class="error">Error al cargar gastos</div>';
+        }
+    } catch (error) {
+        console.error('Error al cargar gastos:', error);
+        list.innerHTML = '<div class="error">Error de conexión</div>';
     }
+}
 
-    // --- LÓGICA DE FORMULARIOS Y ACCIONES RÁPIDAS ---
-    window.toggleForm = function(formId) {
-        const form = document.getElementById(formId);
-        if (form) {
-            const isVisible = form.style.display === 'block';
-            form.style.display = isVisible ? 'none' : 'block';
-            if (!isVisible) {
-                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+function renderExpensesList(expenses) {
+    const list = document.getElementById('expensesList');
+    
+    if (expenses.length === 0) {
+        list.innerHTML = '<div class="empty">No hay gastos en este período</div>';
+        return;
+    }
+    
+    let html = '';
+    expenses.forEach(expense => {
+        const cashIcon = expense.affects_cash ? '💵' : '';
+        const categoryIcon = getCategoryIcon(expense.category);
+        
+        html += `<div class="expense-item ${expense.affects_cash ? 'affects-cash' : ''}">
+            <div class="expense-main">
+                <div class="expense-description">
+                    <span class="category-icon">${categoryIcon}</span>
+                    <span class="description">${expense.description}</span>
+                    <span class="cash-indicator">${cashIcon}</span>
+                </div>
+                <div class="expense-amount">DOP ${expense.amount.toLocaleString('es-DO', {minimumFractionDigits: 2})}</div>
+            </div>
+            <div class="expense-details">
+                <span class="time">${expense.date}</span>
+                <span class="paid-by">${expense.paid_by}</span>
+                <span class="method">${expense.payment_method}</span>
+            </div>
+        </div>`;
+    });
+    
+    list.innerHTML = html;
+}
+
+function getCategoryIcon(category) {
+    const icons = {
+        'Suministros': '📦',
+        'Servicios': '🔧',
+        'Mantenimiento': '🛠️',
+        'Transporte': '🚗',
+        'Alimentación': '🍽️',
+        'Otro': '💼'
+    };
+    return icons[category] || '💼';
+}
+
+async function submitExpense() {
+    const submitBtn = document.querySelector('#quickExpenseForm button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
+    // Validar campos
+    const description = document.getElementById('expenseDesc').value.trim();
+    const amount = parseFloat(document.getElementById('expenseAmount').value);
+    
+    if (!description) {
+        showAlert('error', 'La descripción es requerida');
+        return;
+    }
+    
+    if (!amount || amount <= 0) {
+        showAlert('error', 'El monto debe ser mayor a 0');
+        return;
+    }
+    
+    // Deshabilitar botón
+    submitBtn.textContent = '⏳';
+    submitBtn.disabled = true;
+    
+    const formData = {
+        description: description,
+        amount: amount,
+        category: document.getElementById('expenseCategory').value,
+        payment_method: document.getElementById('expenseMethod').value,
+        paid_by_user_id: {{ current_user.id }}
+    };
+    
+    try {
+        const response = await fetch('/ajax/add_quick_expense', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        });
+        const data = await response.json();
+        
+        showAlert(data.success ? 'success' : 'error', data.message);
+        
+        if (data.success) {
+            // Limpiar formulario
+            document.getElementById('quickExpenseForm').reset();
+            
+            // Refrescar la lista con el período activo
+            const activePeriod = document.querySelector('.period-btn.active').dataset.period;
+            refreshExpenses(activePeriod);
+        }
+    } catch (error) {
+        showAlert('error', 'Error de conexión');
+    } finally {
+        // Restaurar botón
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// ============================================================================
+// WIDGET 4: CLIENTES
+// ============================================================================
+function initializeClients() {
+    const tabs = document.querySelectorAll('.category-tab');
+    const searchInput = document.getElementById('clientSearchInput');
+    
+    // Event listeners para tabs
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            tabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            loadClientCategory(this.dataset.category);
+        });
+    });
+    
+    // Event listener para búsqueda
+    searchInput.addEventListener('input', function() {
+        filterClientsList(this.value);
+    });
+    
+    // Cargar todas las categorías para obtener badges
+    loadAllClientCounts();
+    
+    // Cargar categoría inicial
+    loadClientCategory('current');
+}
+
+async function loadAllClientCounts() {
+    const categories = ['current', 'arriving', 'departing', 'recent'];
+    
+    for (const category of categories) {
+        try {
+            const response = await fetch(`/ajax/get_relevant_clients?category=${category}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const badgeElement = document.getElementById(`${category}Count`);
+                if (badgeElement) {
+                    badgeElement.textContent = data.count;
+                    badgeElement.style.display = data.count > 0 ? 'inline' : 'none';
+                }
             }
+        } catch (error) {
+            console.error(`Error loading count for ${category}:`, error);
+        }
+    }
+}
+
+async function loadClientCategory(category) {
+    const list = document.getElementById('clientsList');
+    list.innerHTML = '<div class="loading">Cargando...</div>';
+    
+    try {
+        const response = await fetch(`/ajax/get_relevant_clients?category=${category}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            // Guardar datos para filtrado
+            window.currentClients = data.clients;
+            
+            // Actualizar contador
+            document.getElementById('clientCount').textContent = 
+                `${data.count} cliente${data.count !== 1 ? 's' : ''}`;
+            
+            // Renderizar lista
+            renderClientsList(data.clients);
+            
+            // Limpiar búsqueda
+            document.getElementById('clientSearchInput').value = '';
+        } else {
+            list.innerHTML = '<div class="error">Error al cargar clientes</div>';
+        }
+    } catch (error) {
+        list.innerHTML = '<div class="error">Error de conexión</div>';
+    }
+}
+
+function renderClientsList(clients) {
+    const list = document.getElementById('clientsList');
+    
+    if (clients.length === 0) {
+        list.innerHTML = '<div class="empty">No hay clientes en esta categoría</div>';
+        return;
+    }
+    
+    let html = '';
+    clients.forEach(client => {
+        const visitBadge = client.visit_count > 1 ? 
+            `<span class="visit-badge">${client.visit_count}x</span>` : '';
+        
+        const statusIcon = getStatusIcon(client.status);
+        
+        html += `<div class="client-item" data-name="${client.full_name.toLowerCase()}" data-phone="${client.phone_number}">
+            <div class="client-main">
+                <div class="client-info">
+                    <div class="client-name">
+                        <span class="name">${client.full_name}</span>
+                        ${visitBadge}
+                    </div>
+                    <div class="client-detail">
+                        <span class="detail">${client.detail}</span>
+                        <span class="status">${statusIcon} ${client.status}</span>
+                    </div>
+                </div>
+                <div class="client-room">
+                    <span class="room">${client.room}</span>
+                    <span class="total">DOP ${client.total_paid.toLocaleString()}</span>
+                </div>
+            </div>
+            <div class="client-actions">
+                <span class="phone">${client.phone_number}</span>
+            </div>
+        </div>`;
+    });
+    
+    list.innerHTML = html;
+}
+
+function getStatusIcon(status) {
+    const icons = {
+        'Activa': '🟢',
+        'Pendiente de Cierre': '🟡',
+        'Finalizada': '⚪',
+        'Cancelada': '🔴'
+    };
+    return icons[status] || '❓';
+}
+
+function filterClientsList(searchTerm) {
+    if (!window.currentClients) return;
+    
+    const filtered = window.currentClients.filter(client => {
+        const searchLower = searchTerm.toLowerCase();
+        return client.full_name.toLowerCase().includes(searchLower) ||
+               client.phone_number.includes(searchTerm) ||
+               client.room.toLowerCase().includes(searchLower);
+    });
+    
+    renderClientsList(filtered);
+    
+    // Actualizar contador
+    document.getElementById('clientCount').textContent = 
+        `${filtered.length} de ${window.currentClients.length} cliente${filtered.length !== 1 ? 's' : ''}`;
+}
+
+function refreshClients() {
+    const activeTab = document.querySelector('.category-tab.active');
+    if (activeTab) {
+        loadAllClientCounts();
+        loadClientCategory(activeTab.dataset.category);
+    }
+}
+
+// ============================================================================
+// WIDGET 5: INVENTARIO
+// ============================================================================
+function initializeInventory() {
+    const actionTabs = document.querySelectorAll('.action-tab');
+    const form = document.getElementById('quickInventoryForm');
+    const supplySelect = document.getElementById('inventorySupplySelect');
+    const quantityInput = document.getElementById('inventoryQuantity');
+    
+    // Variable global para la acción actual
+    window.currentInventoryAction = 'add';
+    
+    // Event listeners para tabs de acción
+    actionTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            actionTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            window.currentInventoryAction = this.dataset.action;
+            updateActionPreview();
+            updateFormPlaceholders();
+        });
+    });
+    
+    // Event listeners para cambios en el formulario
+    supplySelect.addEventListener('change', updateActionPreview);
+    quantityInput.addEventListener('input', updateActionPreview);
+    
+    // Event listener para el formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitInventoryAction();
+    });
+    
+    // Cargar estado inicial
+    refreshInventoryStatus();
+}
+
+function updateFormPlaceholders() {
+    const quantityInput = document.getElementById('inventoryQuantity');
+    const notesInput = document.getElementById('inventoryNotes');
+    
+    const placeholders = {
+        'add': {
+            quantity: 'Cantidad a agregar',
+            notes: 'Ej: Compra, reposición...'
+        },
+        'use': {
+            quantity: 'Cantidad a usar',
+            notes: 'Ej: Limpieza, mantenimiento...'
+        },
+        'adjust': {
+            quantity: 'Nuevo total',
+            notes: 'Motivo del ajuste...'
         }
     };
     
-    window.switchTabAndToggleForm = function(tabId, formId) {
-        switchTab(tabId);
-        setTimeout(() => {
-            toggleForm(formId);
-        }, 100);
+    const current = placeholders[window.currentInventoryAction];
+    quantityInput.placeholder = current.quantity;
+    notesInput.placeholder = current.notes;
+}
+
+function updateActionPreview() {
+    const supplySelect = document.getElementById('inventorySupplySelect');
+    const quantityInput = document.getElementById('inventoryQuantity');
+    const preview = document.getElementById('actionPreview');
+    const previewText = preview.querySelector('.preview-text');
+    
+    const selectedOption = supplySelect.selectedOptions[0];
+    const quantity = parseInt(quantityInput.value);
+    
+    if (!selectedOption || !quantity) {
+        preview.style.display = 'none';
+        return;
+    }
+    
+    const supplyName = selectedOption.textContent.split('(')[0].trim();
+    const currentStock = parseInt(selectedOption.dataset.stock);
+    const minStock = parseInt(selectedOption.dataset.min);
+    
+    let newStock, actionText, statusClass;
+    
+    switch (window.currentInventoryAction) {
+        case 'add':
+            newStock = currentStock + quantity;
+            actionText = `${supplyName}: ${currentStock} + ${quantity} = ${newStock}`;
+            statusClass = newStock > minStock ? 'positive' : 'warning';
+            break;
+        case 'use':
+            if (quantity > currentStock) {
+                actionText = `⚠️ Stock insuficiente (disponible: ${currentStock})`;
+                statusClass = 'error';
+            } else {
+                newStock = currentStock - quantity;
+                actionText = `${supplyName}: ${currentStock} - ${quantity} = ${newStock}`;
+                statusClass = newStock <= minStock ? 'warning' : 'positive';
+            }
+            break;
+        case 'adjust':
+            newStock = quantity;
+            actionText = `${supplyName}: ${currentStock} → ${newStock}`;
+            statusClass = newStock <= minStock ? 'warning' : 'positive';
+            break;
+    }
+    
+    previewText.textContent = actionText;
+    preview.className = `action-preview ${statusClass}`;
+    preview.style.display = 'block';
+}
+
+async function submitInventoryAction() {
+    const submitBtn = document.querySelector('#quickInventoryForm button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
+    const supplyId = document.getElementById('inventorySupplySelect').value;
+    const quantity = parseInt(document.getElementById('inventoryQuantity').value);
+    const notes = document.getElementById('inventoryNotes').value.trim();
+    
+    if (!supplyId || !quantity) {
+        showAlert('error', 'Complete todos los campos requeridos');
+        return;
+    }
+    
+    // Deshabilitar botón
+    submitBtn.textContent = '⏳';
+    submitBtn.disabled = true;
+    
+    const formData = {
+        supply_id: supplyId,
+        quantity: quantity,
+        action: window.currentInventoryAction,
+        notes: notes
     };
-
-    // --- LÓGICA DE ALERTAS ---
-    window.showAlert = function(type, message) {
-        const container = document.querySelector('.control-panel-container');
-        if (!container) return;
-
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `dashboard-alert ${type} fade-in`;
-        alertDiv.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> <div>${message}</div>`;
-        
-        container.insertBefore(alertDiv, container.firstChild);
-
-        setTimeout(() => {
-            alertDiv.classList.add('fade-out');
-            alertDiv.addEventListener('transitionend', () => alertDiv.remove());
-        }, 5000);
-    };
-
-    // --- LÓGICA DE FORMULARIOS AJAX ---
-    document.querySelectorAll('.ajax-form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            
-            submitBtn.innerHTML = 'Guardando...';
-            submitBtn.disabled = true;
-
-            fetch(this.action, { method: 'POST', body: formData })
-                .then(response => response.json())
-                .then(data => {
-                    showAlert(data.success ? 'success' : 'danger', data.message);
-                    if (data.success) {
-                        this.reset();
-                        // Opcional: recargar la página para ver los cambios
-                        setTimeout(() => window.location.reload(), 1500);
-                    }
-                })
-                .catch(error => showAlert('danger', 'Error de conexión.'))
-                .finally(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                });
+    
+    try {
+        const response = await fetch('/ajax/quick_inventory_update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
         });
+        const data = await response.json();
+        
+        showAlert(data.success ? 'success' : 'error', data.message);
+        
+        if (data.success) {
+            // Limpiar formulario
+            document.getElementById('quickInventoryForm').reset();
+            document.getElementById('actionPreview').style.display = 'none';
+            
+            // Actualizar select con nuevo stock
+            updateSupplyOption(data.supply);
+            
+            // Refrescar estado del inventario
+            refreshInventoryStatus();
+        }
+    } catch (error) {
+        showAlert('error', 'Error de conexión');
+    } finally {
+        // Restaurar botón
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function updateSupplyOption(supply) {
+    const option = document.querySelector(`#inventorySupplySelect option[value="${supply.id}"]`);
+    if (option) {
+        option.dataset.stock = supply.current_stock;
+        option.textContent = `${supply.name} (Stock: ${supply.current_stock})`;
+    }
+}
+
+async function refreshInventoryStatus() {
+    try {
+        const response = await fetch('/ajax/get_inventory_status');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar contadores
+            document.getElementById('criticalCount').textContent = data.critical_count;
+            document.getElementById('warningCount').textContent = data.warning_count;
+            document.getElementById('lastUpdate').textContent = data.last_updated;
+            
+            // Actualizar lista de alertas
+            renderInventoryAlerts(data.alerts);
+        }
+    } catch (error) {
+        console.error('Error al cargar estado del inventario:', error);
+    }
+}
+
+function renderInventoryAlerts(alerts) {
+    const alertsList = document.getElementById('alertsList');
+    
+    if (alerts.length === 0) {
+        alertsList.innerHTML = '<div class="empty">✅ Todos los productos tienen stock suficiente</div>';
+        return;
+    }
+    
+    let html = '';
+    alerts.forEach(alert => {
+        const statusIcon = alert.status === 'critical' ? '🔴' : '🟡';
+        const statusClass = alert.status;
+        
+        html += `<div class="stock-item ${statusClass}" data-supply-id="${alert.id}">
+            <div class="item-info">
+                <span class="name">${alert.name}</span>
+                <span class="category">${alert.category}</span>
+            </div>
+            <div class="item-stock">
+                <span class="current">${alert.current_stock}</span>
+                <span class="separator">/</span>
+                <span class="minimum">${alert.minimum_stock}</span>
+            </div>
+            <div class="item-status">
+                <span class="status-indicator ${statusClass}">${statusIcon}</span>
+            </div>
+        </div>`;
     });
-});
+    
+    alertsList.innerHTML = html;
+}
+
+function refreshInventory() {
+    refreshInventoryStatus();
+    
+    // Actualizar timestamp
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent = now.toLocaleTimeString('es', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// ============================================================================
+// UTILIDADES GLOBALES
+// ============================================================================
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.innerHTML = `
+        <span>${type === 'success' ? '✅' : '❌'}</span>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.classList.add('fade-out');
+        setTimeout(() => alertDiv.remove(), 500);
+    }, 3000);
+}
 </script>
+
+<style>
+/* ============================================================================
+   PANEL V2.0 - ESTILOS PRINCIPALES
+   ============================================================================ */
+
+.control-panel-v2 {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.panel-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.panel-header h1 {
+    font-size: 2.5em;
+    margin: 0;
+    background: linear-gradient(45deg, #007bff, #28a745);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.panel-header p {
+    color: #6c757d;
+    font-size: 1.1em;
+    margin: 10px 0 0 0;
+}
+
+/* ============================================================================
+   GRID DE WIDGETS
+   ============================================================================ */
+
+.widgets-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 20px;
+    grid-template-areas:
+        "intelligent-booking intelligent-booking"
+        "calendar registration"
+        "calendar expenses"
+        "clients inventory";
+}
+
+.widget {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.intelligent-booking-widget { grid-area: intelligent-booking; }
+.calendar-widget { grid-area: calendar; }
+.registration-widget { grid-area: registration; }
+.expenses-widget { grid-area: expenses; }
+.clients-widget { grid-area: clients; }
+.inventory-widget { grid-area: inventory; }
+
+.widget-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.widget-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #495057;
+}
+
+.widget-content {
+    padding: 20px;
+}
+
+/* ============================================================================
+   WIDGET 0: MOTOR DE RESERVAS INTELIGENTE - NOTIFICACIONES
+   ============================================================================ */
+
+.critical-badge {
+    background: #dc3545;
+    color: white;
+    font-size: 0.7em;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+}
+
+.notification-indicator {
+    background: #dc3545;
+    color: white;
+    font-size: 0.7em;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 8px;
+    font-weight: bold;
+}
+
+.notification-indicator.critical {
+    background: #dc3545;
+    animation: pulse 2s infinite;
+}
+
+.opportunities-indicator {
+    font-size: 0.8em;
+    color: #28a745;
+    font-weight: 500;
+    margin-top: 5px;
+    padding: 3px 8px;
+    background: rgba(40, 167, 69, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+/* ============================================================================
+   WIDGET 1: CALENDARIO
+   ============================================================================ */
+
+.calendar-legend {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.calendar-table {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.calendar-row {
+    display: flex;
+}
+
+.calendar-row.header {
+    background: #e9ecef;
+    font-weight: bold;
+}
+
+.calendar-cell {
+    flex: 1;
+    padding: 8px 4px;
+    text-align: center;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.calendar-cell:last-child {
+    border-right: none;
+}
+
+.calendar-row:last-child .calendar-cell {
+    border-bottom: none;
+}
+
+.room-header, .room-name {
+    flex: 0 0 120px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.date-header {
+    flex-direction: column;
+    gap: 2px;
+}
+
+.date-day {
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.date-month {
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+.calendar-cell.status-disponible { background: #d4edda; }
+.calendar-cell.status-ocupado { background: #f8d7da; }
+.calendar-cell.status-check-in { background: #fff3cd; }
+.calendar-cell.status-check-out { background: #ffeaa7; }
+.calendar-cell.status-mantenimiento { background: #e2e3e5; }
+
+.calendar-cell:hover {
+    opacity: 0.8;
+}
+
+/* ============================================================================
+   WIDGET 2: REGISTRO
+   ============================================================================ */
+
+.quick-form {
+    space-y: 15px;
+}
+
+.form-section {
+    margin-bottom: 15px;
+}
+
+.form-section label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+}
+
+.form-col {
+    flex: 1;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+.client-results {
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.client-found {
+    background: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.client-not-found {
+    background: #fff3cd;
+    color: #856404;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ============================================================================
+   WIDGET 3: GASTOS
+   ============================================================================ */
+
+.period-filters {
+    display: flex;
+    gap: 5px;
+}
+
+.period-btn {
+    padding: 4px 8px;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.2s;
+}
+
+.period-btn:hover {
+    background: #f8f9fa;
+}
+
+.period-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.expense-summary {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    flex: 1;
+}
+
+.summary-item .label {
+    color: #6c757d;
+    font-size: 0.8em;
+    margin-bottom: 2px;
+}
+
+.summary-item .value {
+    font-weight: bold;
+    color: #007bff;
+    font-size: 1em;
+}
+
+.form-col-wide {
+    flex: 2;
+}
+
+.form-col-narrow {
+    flex: 1;
+}
+
+.form-col-btn {
+    flex: 0 0 50px;
+}
+
+.expenses-list {
+    margin-top: 15px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.expense-item {
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.expense-item:hover {
+    background: #f8f9fa;
+}
+
+.expense-item:last-child {
+    border-bottom: none;
+}
+
+.expense-item.affects-cash {
+    border-left: 3px solid #ffc107;
+    background: #fff9e6;
+}
+
+.expense-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.expense-description {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+}
+
+.category-icon {
+    font-size: 1.1em;
+}
+
+.description {
+    color: #495057;
+    font-weight: 500;
+}
+
+.cash-indicator {
+    margin-left: 5px;
+}
+
+.expense-amount {
+    font-weight: bold;
+    color: #dc3545;
+    font-size: 1em;
+}
+
+.expense-details {
+    display: flex;
+    justify-content: space-between;
+    color: #6c757d;
+    font-size: 0.8em;
+}
+
+.expense-details span {
+    flex: 1;
+}
+
+.expense-details .time {
+    font-family: monospace;
+}
+
+.expense-details .paid-by {
+    text-align: center;
+}
+
+.expense-details .method {
+    text-align: right;
+}
+
+/* ============================================================================
+   WIDGET 4: CLIENTES
+   ============================================================================ */
+
+.client-count {
+    font-size: 0.8em;
+    color: #6c757d;
+    font-weight: normal;
+}
+
+.client-categories {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.category-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.category-tab:hover {
+    background: #f8f9fa;
+}
+
+.category-tab.active {
+    border-bottom-color: #007bff;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.tab-icon {
+    font-size: 1.2em;
+    margin-bottom: 2px;
+}
+
+.tab-text {
+    font-size: 0.9em;
+}
+
+.tab-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #dc3545;
+    color: white;
+    border-radius: 10px;
+    padding: 1px 5px;
+    font-size: 0.7em;
+    min-width: 16px;
+    text-align: center;
+    display: none;
+}
+
+.clients-list {
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.client-item {
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.client-item:hover {
+    background: #f8f9fa;
+}
+
+.client-item:last-child {
+    border-bottom: none;
+}
+
+.client-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 5px;
+}
+
+.client-info {
+    flex: 1;
+}
+
+.client-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+}
+
+.client-name .name {
+    font-weight: bold;
+    color: #495057;
+}
+
+.visit-badge {
+    background: #28a745;
+    color: white;
+    font-size: 0.7em;
+    padding: 1px 4px;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.client-detail {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+.client-detail .detail {
+    flex: 1;
+}
+
+.client-detail .status {
+    font-size: 0.75em;
+    font-weight: 500;
+}
+
+.client-room {
+    text-align: right;
+    min-width: 80px;
+}
+
+.client-room .room {
+    font-weight: bold;
+    color: #007bff;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.client-room .total {
+    font-size: 0.8em;
+    color: #28a745;
+    font-weight: 600;
+}
+
+.client-actions {
+    text-align: center;
+}
+
+.client-actions .phone {
+    font-family: monospace;
+    font-size: 0.8em;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.client-search {
+    margin-top: 10px;
+}
+
+.client-search .form-control {
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 0.8em;
+}
+
+/* ============================================================================
+   WIDGET 5: INVENTARIO
+   ============================================================================ */
+
+.last-update {
+    font-size: 0.7em;
+    color: #6c757d;
+    font-family: monospace;
+}
+
+.inventory-summary {
+    margin-bottom: 20px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.summary-card {
+    text-align: center;
+    padding: 12px 8px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+}
+
+.summary-card.critical {
+    background: #f8d7da;
+    border-color: #dc3545;
+}
+
+.summary-card.warning {
+    background: #fff3cd;
+    border-color: #ffc107;
+}
+
+.summary-card.pending {
+    background: #d1ecf1;
+    border-color: #17a2b8;
+}
+
+.card-number {
+    font-size: 1.8em;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.summary-card.critical .card-number {
+    color: #dc3545;
+}
+
+.summary-card.warning .card-number {
+    color: #856404;
+}
+
+.summary-card.pending .card-number {
+    color: #17a2b8;
+}
+
+.card-label {
+    font-size: 0.8em;
+    color: #495057;
+    font-weight: 600;
+}
+
+.quick-action-section {
+    margin-bottom: 20px;
+}
+
+.quick-action-section h4 {
+    font-size: 1em;
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.action-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.action-tab {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8em;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.action-tab:hover {
+    background: #f8f9fa;
+}
+
+.action-tab.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.action-preview {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: 500;
+    text-align: center;
+}
+
+.action-preview.positive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.action-preview.warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.action-preview.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.pending-closures {
+    margin-bottom: 20px;
+}
+
+.pending-closures h4 {
+    font-size: 1em;
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.closure-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #fff3cd;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.closure-info {
+    flex: 1;
+}
+
+.closure-item .room {
+    font-weight: bold;
+    display: block;
+}
+
+.closure-item .client {
+    color: #6c757d;
+    font-size: 0.8em;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 0.8em;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.stock-alerts {
+    margin-bottom: 15px;
+}
+
+.stock-alerts h4 {
+    font-size: 1em;
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.alerts-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.stock-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    border-left: 3px solid transparent;
+}
+
+.stock-item.critical {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+.stock-item.warning {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-info .name {
+    font-weight: bold;
+    color: #495057;
+    display: block;
+}
+
+.item-info .category {
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+.item-stock {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.item-stock .current {
+    color: #dc3545;
+}
+
+.item-stock .separator {
+    color: #6c757d;
+}
+
+.item-stock .minimum {
+    color: #6c757d;
+}
+
+.item-status {
+    margin-left: 10px;
+}
+
+.status-indicator {
+    font-size: 1.2em;
+}
+
+/* ============================================================================
+   UTILIDADES
+   ============================================================================ */
+
+.loading, .error, .empty {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.error {
+    color: #dc3545;
+}
+
+.alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 6px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s ease;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.fade-out {
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.5s;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 1200px) {
+    .widgets-container {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "intelligent-booking"
+            "calendar"
+            "registration"
+            "expenses"
+            "clients"
+            "inventory";
+    }
+}
+
+@media (max-width: 768px) {
+    .control-panel-v2 {
+        padding: 10px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .calendar-cell {
+        font-size: 1em;
+        min-height: 35px;
+    }
+    
+    .room-name, .room-header {
+        flex: 0 0 80px;
+        font-size: 0.8em;
+    }
+}
+</style>
 {% endblock %}

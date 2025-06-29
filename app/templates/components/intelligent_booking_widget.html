@@ -1,0 +1,586 @@
+{% from "_macros.html" import render_widget, render_button, render_form_field, render_alert, render_badge, render_loading %}
+
+<!-- Widget Inteligente de Reservas -->
+{% call render_widget('intelligentBookingWidget', 'Motor de Reservas Inteligente', '🧠', extra_class='intelligent-booking-widget') %}
+        <!-- Formulario de consulta inteligente -->
+        <div class="booking-query-form">
+            <form id="intelligentBookingForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        {{ render_form_field('date', 'checkInDate', 'Check-in', required=True) }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ render_form_field('date', 'checkOutDate', 'Check-out', required=True) }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ render_form_field('number', 'guests', 'Huéspedes', value='2', extra_attrs='min="1" max="10"') }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ render_form_field('select', 'preferredTier', 'Tier Preferido', 
+                            options=[
+                                {'value': '', 'text': 'Cualquiera'},
+                                {'value': 'Económica', 'text': 'Económica'},
+                                {'value': 'Estándar', 'text': 'Estándar'},
+                                {'value': 'Superior', 'text': 'Superior'},
+                                {'value': 'Suite', 'text': 'Suite'}
+                            ]) }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ render_button('🔍 Buscar', type='submit', class='btn btn-primary w-100') }}
+                    </div>
+                </div>
+                
+                <!-- Opciones avanzadas (colapsables) -->
+                <div class="collapse mt-3" id="advancedOptions">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            {{ render_form_field('number', 'maxBudget', 'Presupuesto máximo (DOP)', placeholder='Opcional') }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ render_form_field('select', 'clientId', 'Cliente', 
+                                options=[{'value': '', 'text': 'Seleccionar cliente...'}]) }}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="flexibleDates">
+                                <label class="form-check-label" for="flexibleDates">
+                                    Fechas flexibles (±3 días)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            {{ render_form_field('number', 'flexibleDays', 'Días de flexibilidad', value='3', extra_attrs='min="1" max="7"') }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-2">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#advancedOptions">
+                        ⚙️ Opciones Avanzadas
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Área de resultados -->
+        <div class="booking-results mt-4" id="bookingResults" style="display: none;">
+            <!-- Loading state -->
+            <div class="loading-state" id="loadingState" style="display: none;">
+                {{ render_loading('Analizando disponibilidad...', 'normal') }}
+            </div>
+            
+            <!-- Resumen de la consulta -->
+            <div class="query-summary" id="querySummary" style="display: none;">
+                <div class="alert alert-info">
+                    <strong>📊 Consulta:</strong> <span id="summaryText"></span>
+                </div>
+            </div>
+            
+            <!-- Sugerencias inteligentes -->
+            <div class="intelligent-suggestions" id="intelligentSuggestions" style="display: none;">
+                <h6>💡 Sugerencias Inteligentes</h6>
+                <div id="suggestionsList"></div>
+            </div>
+            
+            <!-- Estadísticas rápidas -->
+            <div class="quick-stats" id="quickStats" style="display: none;">
+                <div class="row text-center">
+                    <div class="col-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalSuggestions">0</div>
+                            <div class="stat-label">Sugerencias</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="directAvailability">0</div>
+                            <div class="stat-label">Disponibles</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="alternativeOptions">0</div>
+                            <div class="stat-label">Alternativas</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="occupancyRate">0%</div>
+                            <div class="stat-label">Ocupación</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endcall %}
+
+<style>
+.intelligent-booking-widget {
+    margin-bottom: 20px;
+}
+
+.booking-query-form {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.stat-item {
+    padding: 10px;
+}
+
+.stat-number {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+.suggestion-card {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 10px 0;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.suggestion-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.15);
+}
+
+.suggestion-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.suggestion-title {
+    font-weight: bold;
+    margin: 0;
+}
+
+.suggestion-price {
+    font-weight: bold;
+    color: #28a745;
+}
+
+.suggestion-description {
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+
+.suggestion-meta {
+    display: flex;
+    gap: 10px;
+    font-size: 0.85em;
+}
+
+.confidence-badge {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+}
+
+.priority-critical { border-left: 4px solid #dc3545; }
+.priority-high { border-left: 4px solid #fd7e14; }
+.priority-medium { border-left: 4px solid #ffc107; }
+.priority-low { border-left: 4px solid #20c997; }
+.priority-info { border-left: 4px solid #17a2b8; }
+
+.suggestion-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.quick-stats {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.alert-suggestion {
+    background: #e7f3ff;
+    border: 1px solid #b8daff;
+    border-radius: 6px;
+    padding: 10px 15px;
+    margin: 10px 0;
+}
+
+@media (max-width: 768px) {
+    .booking-query-form .row {
+        flex-direction: column;
+    }
+    
+    .suggestion-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .quick-stats .row {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+// Estado del widget
+let currentSuggestions = [];
+let selectedSuggestion = null;
+
+// Inicializar widget
+document.addEventListener('DOMContentLoaded', function() {
+    initializeIntelligentBookingWidget();
+});
+
+function initializeIntelligentBookingWidget() {
+    // Configurar fechas por defecto
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date(today);
+    dayAfter.setDate(dayAfter.getDate() + 2);
+    
+    document.getElementById('checkInDate').value = tomorrow.toISOString().split('T')[0];
+    document.getElementById('checkOutDate').value = dayAfter.toISOString().split('T')[0];
+    
+    // Cargar clientes para el select
+    loadClientsForSelect();
+    
+    // Configurar event listeners
+    document.getElementById('intelligentBookingForm').addEventListener('submit', handleIntelligentSearch);
+    document.getElementById('flexibleDates').addEventListener('change', toggleFlexibleDays);
+}
+
+function loadClientsForSelect() {
+    // Cargar clientes frecuentes
+    fetch('/ajax/client_search?term=')
+        .then(response => response.json())
+        .then(clients => {
+            const select = document.querySelector('#clientId select') || document.getElementById('clientId');
+            if (select && clients.length > 0) {
+                clients.slice(0, 10).forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.id;
+                    option.textContent = `${client.label} (${client.visit_count} visitas)`;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error cargando clientes:', error));
+}
+
+function handleIntelligentSearch(event) {
+    event.preventDefault();
+    
+    // Recopilar datos del formulario
+    const formData = new FormData(event.target);
+    const searchData = {
+        check_in: formData.get('checkInDate') || document.getElementById('checkInDate').value,
+        check_out: formData.get('checkOutDate') || document.getElementById('checkOutDate').value,
+        guests: parseInt(formData.get('guests') || document.getElementById('guests').value),
+        preferred_tier: formData.get('preferredTier') || document.getElementById('preferredTier').value,
+        max_budget: formData.get('maxBudget') ? parseFloat(formData.get('maxBudget')) : null,
+        client_id: formData.get('clientId') ? parseInt(formData.get('clientId')) : null,
+        flexible_dates: document.getElementById('flexibleDates').checked,
+        flexible_days: parseInt(document.getElementById('flexibleDays').value)
+    };
+    
+    // Validaciones
+    if (!searchData.check_in || !searchData.check_out) {
+        alert('Las fechas de check-in y check-out son requeridas');
+        return;
+    }
+    
+    if (new Date(searchData.check_in) >= new Date(searchData.check_out)) {
+        alert('La fecha de check-out debe ser posterior al check-in');
+        return;
+    }
+    
+    // Mostrar loading y realizar búsqueda
+    showLoadingState();
+    performIntelligentSearch(searchData);
+}
+
+function showLoadingState() {
+    document.getElementById('bookingResults').style.display = 'block';
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('querySummary').style.display = 'none';
+    document.getElementById('intelligentSuggestions').style.display = 'none';
+    document.getElementById('quickStats').style.display = 'none';
+}
+
+function performIntelligentSearch(searchData) {
+    fetch('/intelligence/suggest_availability', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(searchData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('loadingState').style.display = 'none';
+        
+        if (data.success) {
+            currentSuggestions = data.suggestions;
+            displaySearchResults(data);
+        } else {
+            showErrorMessage(data.error);
+        }
+    })
+    .catch(error => {
+        document.getElementById('loadingState').style.display = 'none';
+        showErrorMessage('Error de conexión: ' + error.message);
+    });
+}
+
+function displaySearchResults(data) {
+    // Mostrar resumen de la consulta
+    const summaryText = `${data.request_summary.nights} noche(s) del ${data.request_summary.check_in} al ${data.request_summary.check_out}`;
+    document.getElementById('summaryText').textContent = summaryText;
+    document.getElementById('querySummary').style.display = 'block';
+    
+    // Mostrar estadísticas rápidas
+    document.getElementById('totalSuggestions').textContent = data.stats.total_suggestions;
+    document.getElementById('directAvailability').textContent = data.stats.direct_availability_count;
+    document.getElementById('alternativeOptions').textContent = data.stats.alternative_options_count;
+    document.getElementById('quickStats').style.display = 'block';
+    
+    // Mostrar sugerencias
+    if (data.suggestions.length > 0) {
+        displaySuggestions(data.suggestions);
+        document.getElementById('intelligentSuggestions').style.display = 'block';
+    } else {
+        showNoResultsMessage();
+    }
+}
+
+function displaySuggestions(suggestions) {
+    const container = document.getElementById('suggestionsList');
+    container.innerHTML = '';
+    
+    suggestions.forEach((suggestion, index) => {
+        const suggestionCard = createSuggestionCard(suggestion, index);
+        container.appendChild(suggestionCard);
+    });
+}
+
+function createSuggestionCard(suggestion, index) {
+    const card = document.createElement('div');
+    card.className = `suggestion-card priority-${suggestion.priority}`;
+    card.onclick = () => selectSuggestion(suggestion, index);
+    
+    // Header con título y precio
+    const header = document.createElement('div');
+    header.className = 'suggestion-header';
+    
+    const title = document.createElement('h6');
+    title.className = 'suggestion-title';
+    title.textContent = suggestion.title;
+    
+    const price = document.createElement('div');
+    if (suggestion.estimated_price) {
+        price.className = 'suggestion-price';
+        price.textContent = `DOP ${suggestion.estimated_price.toLocaleString()}`;
+        if (suggestion.savings) {
+            price.innerHTML += ` <small>(Ahorro: DOP ${suggestion.savings.toLocaleString()})</small>`;
+        }
+    }
+    
+    header.appendChild(title);
+    if (suggestion.estimated_price) {
+        header.appendChild(price);
+    }
+    
+    // Descripción
+    const description = document.createElement('div');
+    description.className = 'suggestion-description';
+    description.textContent = suggestion.description;
+    
+    // Metadata
+    const meta = document.createElement('div');
+    meta.className = 'suggestion-meta';
+    
+    // Badge de confianza
+    const confidenceBadge = document.createElement('span');
+    confidenceBadge.className = 'confidence-badge';
+    confidenceBadge.textContent = `${Math.round(suggestion.confidence_score * 100)}% confianza`;
+    
+    meta.appendChild(confidenceBadge);
+    
+    // Información adicional
+    if (suggestion.upgrade_value) {
+        const upgradeBadge = document.createElement('span');
+        upgradeBadge.className = 'badge bg-warning text-dark';
+        upgradeBadge.textContent = `Upgrade ${suggestion.upgrade_value}`;
+        meta.appendChild(upgradeBadge);
+    }
+    
+    if (suggestion.alternative_dates) {
+        const datesBadge = document.createElement('span');
+        datesBadge.className = 'badge bg-info';
+        datesBadge.textContent = `${suggestion.alternative_dates.check_in_display} - ${suggestion.alternative_dates.check_out_display}`;
+        meta.appendChild(datesBadge);
+    }
+    
+    // Acciones
+    const actions = document.createElement('div');
+    actions.className = 'suggestion-actions';
+    
+    if (suggestion.type === 'available_room') {
+        const bookButton = document.createElement('button');
+        bookButton.className = 'btn btn-success btn-sm';
+        bookButton.textContent = '📝 Reservar';
+        bookButton.onclick = (e) => {
+            e.stopPropagation();
+            initiateBooking(suggestion);
+        };
+        actions.appendChild(bookButton);
+    }
+    
+    const detailsButton = document.createElement('button');
+    detailsButton.className = 'btn btn-outline-primary btn-sm';
+    detailsButton.textContent = '👁️ Detalles';
+    detailsButton.onclick = (e) => {
+        e.stopPropagation();
+        showSuggestionDetails(suggestion);
+    };
+    actions.appendChild(detailsButton);
+    
+    // Ensamblar card
+    card.appendChild(header);
+    card.appendChild(description);
+    card.appendChild(meta);
+    card.appendChild(actions);
+    
+    return card;
+}
+
+function selectSuggestion(suggestion, index) {
+    // Remover selección anterior
+    document.querySelectorAll('.suggestion-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Marcar como seleccionado
+    document.querySelectorAll('.suggestion-card')[index].classList.add('selected');
+    selectedSuggestion = suggestion;
+    
+    console.log('Sugerencia seleccionada:', suggestion);
+}
+
+function initiateBooking(suggestion) {
+    if (!suggestion.room_id) {
+        alert('Esta sugerencia no permite reserva directa');
+        return;
+    }
+    
+    // Recopilar datos para la reserva
+    const bookingData = {
+        room_id: suggestion.room_id,
+        check_in: suggestion.alternative_dates ? suggestion.alternative_dates.check_in : document.getElementById('checkInDate').value,
+        check_out: suggestion.alternative_dates ? suggestion.alternative_dates.check_out : document.getElementById('checkOutDate').value,
+        estimated_price: suggestion.estimated_price
+    };
+    
+    // Aquí se podría abrir un modal de reserva o redirigir
+    console.log('Iniciando reserva:', bookingData);
+    alert(`Iniciando reserva para ${suggestion.room_name}. Esta funcionalidad se integrará con el sistema de reservas.`);
+}
+
+function showSuggestionDetails(suggestion) {
+    // Crear modal con detalles completos
+    const modalContent = `
+        <div class="modal fade" id="suggestionDetailsModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${suggestion.title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Descripción:</strong> ${suggestion.description}</p>
+                        <p><strong>Tipo:</strong> ${suggestion.type}</p>
+                        <p><strong>Prioridad:</strong> ${suggestion.priority}</p>
+                        <p><strong>Confianza:</strong> ${Math.round(suggestion.confidence_score * 100)}%</p>
+                        ${suggestion.estimated_price ? `<p><strong>Precio estimado:</strong> DOP ${suggestion.estimated_price.toLocaleString()}</p>` : ''}
+                        ${suggestion.savings ? `<p><strong>Ahorro:</strong> DOP ${suggestion.savings.toLocaleString()}</p>` : ''}
+                        ${suggestion.additional_info ? `<pre>${JSON.stringify(suggestion.additional_info, null, 2)}</pre>` : ''}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal anterior si existe
+    const existingModal = document.getElementById('suggestionDetailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Agregar nuevo modal
+    document.body.insertAdjacentHTML('beforeend', modalContent);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('suggestionDetailsModal'));
+    modal.show();
+}
+
+function toggleFlexibleDays() {
+    const flexibleDays = document.getElementById('flexibleDays');
+    const isChecked = document.getElementById('flexibleDates').checked;
+    
+    flexibleDays.disabled = !isChecked;
+    if (!isChecked) {
+        flexibleDays.value = '3';
+    }
+}
+
+function showErrorMessage(message) {
+    const container = document.getElementById('suggestionsList');
+    container.innerHTML = `
+        <div class="alert alert-danger">
+            <strong>❌ Error:</strong> ${message}
+        </div>
+    `;
+    document.getElementById('intelligentSuggestions').style.display = 'block';
+}
+
+function showNoResultsMessage() {
+    const container = document.getElementById('suggestionsList');
+    container.innerHTML = `
+        <div class="alert alert-warning">
+            <strong>🔍 No se encontraron sugerencias</strong><br>
+            Intenta con fechas diferentes o ajusta los criterios de búsqueda.
+        </div>
+    `;
+    document.getElementById('intelligentSuggestions').style.display = 'block';
+}
+
+// Estilos para selección
+const style = document.createElement('style');
+style.textContent = `
+    .suggestion-card.selected {
+        border-color: #007bff !important;
+        background-color: #f8f9fa;
+        box-shadow: 0 4px 12px rgba(0,123,255,0.25) !important;
+    }
+`;
+document.head.appendChild(style);
+</script>

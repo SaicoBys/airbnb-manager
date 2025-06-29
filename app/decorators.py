@@ -16,11 +16,11 @@ def role_required(*allowed_roles):
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
                 flash('Debes iniciar sesión para acceder a esta página.', 'warning')
-                return redirect(url_for('main.login'))
+                return redirect(url_for('auth.login'))
             
             if current_user.role not in allowed_roles:
                 flash('No tienes permisos para acceder a esta funcionalidad.', 'danger')
-                return redirect(url_for('main.index'))
+                return redirect(url_for('panel.index'))
             
             return f(*args, **kwargs)
         return decorated_function
@@ -47,15 +47,15 @@ def permission_required(permission_method):
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
                 flash('Debes iniciar sesión para acceder a esta página.', 'warning')
-                return redirect(url_for('main.login'))
+                return redirect(url_for('auth.login'))
             
             if not hasattr(current_user, permission_method):
                 flash('Error de configuración de permisos.', 'danger')
-                return redirect(url_for('main.index'))
+                return redirect(url_for('panel.index'))
             
             if not getattr(current_user, permission_method)():
                 flash('No tienes permisos para realizar esta acción.', 'danger')
-                return redirect(url_for('main.index'))
+                return redirect(url_for('panel.index'))
             
             return f(*args, **kwargs)
         return decorated_function
